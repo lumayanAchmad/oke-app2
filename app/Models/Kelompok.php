@@ -27,9 +27,4 @@ class Kelompok extends Model
         return $this->hasMany(KelompokCanValidating::class);
     }
 
-    public function unitKerjaCanVerifying()
-    {
-        return $this->hasMany(unitKerjaCanVerifying::class);
-    }
-
 }

@@ -4,15 +4,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class unitKerjaCanVerifying extends Model
+class UnitKerjaCanVerifying extends Model
 {
     use HasFactory;
 
     protected $guarded = [];
 
-    public function kelompok()
+    public function dataPegawai()
     {
-        return $this->belongsTo(Kelompok::class);
+        return $this->belongsTo(DataPegawai::class);
     }
 
     public function rencanaPembelajaran()

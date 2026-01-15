@@ -351,7 +351,6 @@
     </script>
 
     {{-- ALERT UNTUK validasi KELOMPOK --}}
-    @stack('alert-validasi-kelompok')
 
     <script>
       document.querySelectorAll('.setujuiAlert').forEach(button => {
@@ -400,7 +399,7 @@
 
           Swal.fire({
             title: "Konfirmasi Revisi",
-            text: "Apakah Anda yakin ingin memberikan revisi untuk rencana ini?",
+            text: "Pastikan catatan revisi sudah sesuai sebelum dikirim.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#ffae1f",
@@ -426,12 +425,12 @@
           event.preventDefault();
           let formId = button.getAttribute('data-form-id');
           Swal.fire({
-            title: "Konfirmasi Pembatalan",
-            text: "Anda akan membatalkan persetujuan RPP ini. Apakah Anda yakin ingin melanjutkan?",
+            title: "Batalkan Persetujuan?",
+            text: "Anda akan membatalkan persetujuan RPP ini. Yakin ingin melanjutkan?",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#FA896B",
-            confirmButtonText: "Ya, Batalkan",
+            confirmButtonText: "Batalkan",
             cancelButtonText: "Tidak"
           }).then(result => {
             if (result.isConfirmed) {
@@ -448,12 +447,12 @@
           event.preventDefault();
           let formId = button.getAttribute('data-form-id');
           Swal.fire({
-            title: "Konfirmasi Pembatalan",
-            text: "Anda akan membatalkan penolakan RPP ini. Apakah Anda yakin ingin melanjutkan?",
+            title: "Batalkan Penolakan?",
+            text: "Anda akan membatalkan penolakan RPP ini. Yakin ingin melanjutkan?",
             icon: "question",
             showCancelButton: true,
             confirmButtonColor: "#FA896B",
-            confirmButtonText: "Ya, Batalkan",
+            confirmButtonText: "Batalkan",
             cancelButtonText: "Tidak"
           }).then(result => {
             if (result.isConfirmed) {
@@ -464,8 +463,71 @@
       });
     </script>
 
-    {{-- ALERT UNTUK AJUKAN validasi --}}
-    @stack('alert-ajukan-validasi')
+    <script>
+      document.querySelectorAll('.setujuiDirevisiAlert').forEach(button => {
+        button.addEventListener('click', event => {
+          event.preventDefault();
+          let formId = button.getAttribute('data-form-id');
+          Swal.fire({
+            title: "Konfirmasi Persetujuan",
+            text: "Apakah Anda yakin ingin menyetujui rencana ini?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#13DEB9",
+            confirmButtonText: "Setujui",
+            cancelButtonText: "Batal"
+          }).then(result => {
+            if (result.isConfirmed) {
+              document.getElementById(formId).submit();
+            }
+          });
+        });
+      });
+    </script>
+
+    <script>
+      document.querySelectorAll('.kirimRevisiAlert').forEach(button => {
+        button.addEventListener('click', event => {
+          event.preventDefault();
+          let formId = button.getAttribute('data-form-id');
+          Swal.fire({
+            title: "Kirim Revisi?",
+            text: "Setelah Anda mengirimkan revisi ini, data tidak dapat diedit kembali. Yakin ingin melanjutkan?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#13DEB9",
+            confirmButtonText: "Kirim",
+            cancelButtonText: "Batal"
+          }).then(result => {
+            if (result.isConfirmed) {
+              document.getElementById(formId).submit();
+            }
+          });
+        });
+      });
+    </script>
+
+    <script>
+      document.querySelectorAll('.tambahRevisiAlert').forEach(button => {
+        button.addEventListener('click', event => {
+          event.preventDefault();
+          let formId = button.getAttribute('data-form-id');
+          Swal.fire({
+            title: "Konfirmasi Revisi",
+            text: "Pastikan catatan revisi sudah sesuai sebelum dikirim.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#ffae1f",
+            confirmButtonText: "Kirim Revisi",
+            cancelButtonText: "Batal"
+          }).then(result => {
+            if (result.isConfirmed) {
+              document.getElementById(formId).submit();
+            }
+          });
+        });
+      });
+    </script>
 
     {{-- SWEET ALERT UNTUK CREATE --}}
     <script>
@@ -495,17 +557,45 @@
         button.addEventListener('click', function(event) {
           event.preventDefault(); // Mencegah submit langsung
           Swal.fire({
-            title: "Apakah Anda Yakin?",
-            text: "Data Akan Dihapus Permanen dari Basis Data!",
+            title: "Hapus Data?",
+            text: "Data yang dihapus tidak dapat dipulihkan. Yakin ingin melanjutkan?",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#f9886b",
-            confirmButtonText: "Ya, Hapus!",
+            confirmButtonText: "Hapus",
             cancelButtonText: "Batal"
           }).then((result) => {
             if (result.isConfirmed) {
               // Langsung submit form tanpa popup tambahan
               button.closest('form').submit();
+            }
+          });
+        });
+      });
+    </script>
+
+    {{-- SWEET ALERT UNTUK AJUKAN VERIFIKASI --}}
+    <script>
+      // Alert untuk ajukan verifikasi - TANPA alert sukses
+      document.querySelectorAll('.ajukanAlert').forEach(button => {
+        button.addEventListener('click', function(event) {
+          event.preventDefault();
+          const formId = this.getAttribute('data-form-id');
+          const ajukanForm = document.getElementById(formId);
+
+          Swal.fire({
+            title: "Ajukan Verifikasi",
+            text: "Apakah Anda yakin ingin mengajukan Rencana Pembelajaran ini untuk diverifikasi?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#13deb9",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Ya, Ajukan!",
+            cancelButtonText: "Batal"
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // Langsung submit form TANPA alert sukses
+              ajukanForm.submit();
             }
           });
         });
@@ -519,13 +609,13 @@
         editAlert.addEventListener('click', function(event) {
           event.preventDefault();
           Swal.fire({
-            title: "Konfirmasi Edit",
-            text: "Pastikan Data yang Anda Edit Sudah Benar",
-            icon: "warning",
+            title: "Ajukan Verifikasi?",
+            text: "Setelah diajukan, rencana pembelajaran tidak dapat diedit lagi. Yakin ingin melanjutkan?",
+            icon: "question",
             showCancelButton: true,
-            confirmButtonColor: "#FFAE1F",
-            cancelButtonColor: "#6E7881",
-            confirmButtonText: "Simpan",
+            confirmButtonColor: "#13deb9",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Ajukan",
             cancelButtonText: "Batal"
           }).then((result) => {
             if (result.isConfirmed) {
@@ -542,8 +632,8 @@
         button.addEventListener('click', function(event) {
           event.preventDefault(); // Mencegah submit langsung
           Swal.fire({
-            title: "Konfirmasi Tenggat Rencana",
-            text: "Pastikan data yang anda isikan sudah benar!",
+            title: "Simpan Tenggat Rencana?",
+            text: "Pastikan tanggal tenggat yang Anda tentukan sudah benar sebelum disimpan.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Simpan",

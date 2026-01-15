@@ -6,12 +6,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "bacon/bacon-qr-code": "^2.0",
         "laracasts/flash": "^3.2",
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
         "maatwebsite/excel": "^3.1",
-        "nicolaslopezj/searchable": "1.*"
+        "mpdf/mpdf": "^8.2",
+        "nicolaslopezj/searchable": "1.*",
+        "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.1",

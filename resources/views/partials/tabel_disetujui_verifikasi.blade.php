@@ -7,6 +7,7 @@
         <th class="align-middle">Tahun <br> Kode</th>
         <th class="align-middle">Bentuk</th>
         <th class="align-middle">Kegiatan</th>
+        <th class="align-middle">Approval</th>
         <th class="align-middle">Rencana</th>
         <th class="align-middle">Prioritas</th>
         <th class="align-middle">AKSI</th>
@@ -66,6 +67,56 @@
             @endif
           </td>
 
+          {{-- Approval --}}
+          <td class="px-2">
+            @if ($rencanaPembelajaran->universitasCanApproving)
+              @php
+                $statusUniv = $rencanaPembelajaran->universitasCanApproving->status;
+                $badgeClassUniv = $statusUniv == 'disetujui' ? 'text-bg-success' : 'text-bg-warning';
+                $statusTextUniv = $statusUniv == 'disetujui' ? 'Disetujui' : 'Direvisi';
+              @endphp
+
+              <span class="fw-semibold">Tahap:</span> <br>
+              <span class="badge {{ $badgeClassUniv }} fs-1">{{ $statusTextUniv }}</span><br>
+
+              {{-- Sisa Waktu jika Universitas meminta revisi --}}
+              @if ($statusUniv == 'direvisi' && $rencanaPembelajaran->revisi_due_date)
+                @php
+                  $deadlineUniv = \Carbon\Carbon::parse($rencanaPembelajaran->revisi_due_date);
+                  $diffUniv = now()->diff($deadlineUniv);
+                  $isOverdueUniv = now()->greaterThan($deadlineUniv);
+                @endphp
+                <div class="mt-1 mb-1">
+                  <span class="fw-semibold">Sisa Waktu:</span><br>
+                  <span class="badge text-bg-{{ $isOverdueUniv ? 'danger' : 'dark' }} fs-1">
+                    {{ $isOverdueUniv ? 'Waktu Habis' : ($diffUniv->d > 0 ? $diffUniv->d . 'h ' : '') . $diffUniv->h . 'j ' . $diffUniv->i . 'm' }}
+                  </span>
+                </div>
+              @endif
+
+              {{-- Catatan Universitas --}}
+              @if ($statusUniv == 'direvisi')
+                <span class="fw-semibold">Catatan:</span>
+                @if ($rencanaPembelajaran->universitasCanApproving->catatanApprovalUniversitas->isNotEmpty())
+                  <ul class="mb-0 ps-3">
+                    @foreach ($rencanaPembelajaran->universitasCanApproving->catatanApprovalUniversitas as $item)
+                      <li><small>{{ $item->catatan }}</small></li>
+                    @endforeach
+                  </ul>
+                @else
+                  <div>-</div>
+                @endif
+              @endif
+            @elseif($rencanaPembelajaran->unitKerjaCanVerifying && $rencanaPembelajaran->unitKerjaCanVerifying->status === 'disetujui')
+              {{-- Status otomatis jika Unit Kerja sudah OK tapi Universitas belum proses --}}
+              <span class="fw-semibold">Tahap:</span><br>
+              <span class="badge text-bg-primary bg-opacity-75 fs-1">Ditinjau</span>
+            @else
+              {{-- Belum sampai tahap Universitas --}}
+              <span style="font-size: 0.7rem">-</span>
+            @endif
+          </td>
+
           {{-- RENCANA --}}
           <td class="px-2">
             <span class="fw-semibold">Region: </span>{{ ucwords($rencanaPembelajaran->region->region) ?? '-' }} <br>
@@ -85,18 +136,37 @@
             @endif
           </td>
 
-          {{-- AKSI --}}
+          {{-- AKSI Verifikasi Unit Kerja --}}
           <td class="px-2 text-center">
-            {{-- BATAL SETUJUI RENCANA --}}
-            <form action="{{ route('verifikasi.destroy', $rencanaPembelajaran->unitKerjaCanVerifying->id) }}"
-              method="post" id="batalSetujuiForm-{{ $rencanaPembelajaran->id }}">
-              @csrf
-              @method('DELETE')
-              <button type="submit" class="btn btn-danger btn-sm batalSetujuiAlert" title="Batalkan Persetujuan"
-                data-form-id="batalSetujuiForm-{{ $rencanaPembelajaran->id }}">
-                <span class="ti ti-arrow-back fs-3"></span>
-              </button>
-            </form>
+            @php
+              // Cek apakah sudah ada tindakan dari pihak Universitas
+              $isLockedByUniv = $rencanaPembelajaran->universitasCanApproving !== null;
+            @endphp
+
+            @if ($isWithinDeadline && !$isLockedByUniv)
+              {{-- TOMBOL BATAL AKTIF --}}
+              <form action="{{ route('verifikasi.destroy', $rencanaPembelajaran->unitKerjaCanVerifying->id) }}"
+                method="post" id="batalSetujuiForm-{{ $rencanaPembelajaran->id }}">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm batalSetujuiAlert" title="Batalkan Persetujuan"
+                  data-form-id="batalSetujuiForm-{{ $rencanaPembelajaran->id }}">
+                  <span class="ti ti-arrow-back fs-3"></span>
+                </button>
+              </form>
+            @else
+              {{-- TAMPILAN TERKUNCI --}}
+              <div class="d-flex flex-column align-items-center">
+                <span class="ti ti-lock text-muted fs-4"></span>
+                <small class="text-muted" style="font-size: 0.6rem; text-align: center;">
+                  @if ($isLockedByUniv)
+                    Diproses Universitas
+                  @else
+                    Waktu Verifikasi Habis
+                  @endif
+                </small>
+              </div>
+            @endif
           </td>
         </tr>
       @endforeach

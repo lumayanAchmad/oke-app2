@@ -28,19 +28,17 @@ class ProfilController extends Controller
         // Ambil data pegawai terkait user
         $dataPegawai = $user->dataPegawai;
 
+        // Inisialisasi variabel statistik
+        $rencanaPembelajaran          = null;
+        $progresValidasi              = null;
+        $progresVerifikasi            = null;
+        $progresApproval              = null;
+        $statistikValidasiKetua       = null;
+        $statistikVerifikasiUnit      = null;
+        $statistikApprovalUniversitas = null;
+
         // Ambil pelatihan yang terkait dengan pegawai dan grupkan berdasarkan tahun
         if ($dataPegawai) {
-            if (in_array('ketua_kelompok', $roles)) {
-                $statistikValidasiKetua = $this->getStatistikValidasiKetua($dataPegawai);
-            } else {
-                $statistikValidasiKetua = null;
-            }
-
-            if (in_array('verifikator', $roles)) {
-                $statistikVerifikasiUnit = $this->getStatistikVerifikasiUnitKerja($dataPegawai);
-            } else {
-                $statistikVerifikasiUnit = null;
-            }
             $rencanaPembelajaran = $dataPegawai->rencanaPembelajaran()
                 ->selectRaw('tahun, SUM(jam_pelajaran) as total_jam_pelajaran')
                 ->groupBy('tahun')
@@ -52,11 +50,19 @@ class ProfilController extends Controller
             $progresVerifikasi = $this->getProgresVerifikasi($dataPegawai);
             $progresApproval   = $this->getProgresApproval($dataPegawai);
 
-        } else {
-            $rencanaPembelajaran = null;
-            $progresValidasi     = null;
-            $progresVerifikasi   = null;
-            $progresApproval     = null;
+            // Data untuk statistik khusus role
+            if (in_array('ketua_kelompok', $roles)) {
+                $statistikValidasiKetua = $this->getStatistikValidasiKetua($dataPegawai);
+            }
+
+            if (in_array('verifikator', $roles)) {
+                $statistikVerifikasiUnit = $this->getStatistikVerifikasiUnitKerja($dataPegawai);
+            }
+        }
+
+        // Data untuk approver universitas (tidak memerlukan dataPegawai)
+        if (in_array('approver', $roles)) {
+            $statistikApprovalUniversitas = $this->getStatistikApprovalUniversitas();
         }
 
         $jadwalPerencanaan = $this->getJadwalPerencanaan();
@@ -78,7 +84,8 @@ class ProfilController extends Controller
             'progresVerifikasi',
             'progresApproval',
             'statistikValidasiKetua',
-            'statistikVerifikasiUnit'
+            'statistikVerifikasiUnit',
+            'statistikApprovalUniversitas'
         ));
     }
 
@@ -479,6 +486,139 @@ class ProfilController extends Controller
             'jam_pelajaran_disetujui' => $jamPelajaranDisetujui,
             'jam_pelajaran_direvisi'  => $jamPelajaranDirevisi,
             'unit_kerja'              => $dataPegawai->unitKerja->unit_kerja,
+        ];
+    }
+
+    // Method untuk mendapatkan statistik komprehensif approver universitas
+    private function getStatistikApprovalUniversitas()
+    {
+        // Ambil semua data rencana pembelajaran yang sudah diverifikasi unit kerja
+        $rencanaTerverifikasi = RencanaPembelajaran::whereHas('unitKerjaCanVerifying', function ($q) {
+            $q->where('status', 'disetujui');
+        })->with([
+            'dataPegawai.unitKerja',
+            'dataPegawai.kelompok',
+            'dataPendidikan',
+            'dataPelatihan',
+            'bentukJalur',
+            'jenisPendidikan',
+            'region',
+            'jenjang',
+            'universitasCanApproving',
+        ])->get();
+
+        $total = $rencanaTerverifikasi->count();
+        if ($total === 0) {
+            return null;
+        }
+
+        // Data approval status
+        $approvalData = UniversitasCanApproving::whereIn('rencana_pembelajaran_id', $rencanaTerverifikasi->pluck('id'))
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->get();
+
+        $disetujui = $approvalData->where('status', 'disetujui')->first()->count ?? 0;
+        $ditolak   = $approvalData->where('status', 'ditolak')->first()->count ?? 0;
+        $belum     = $total - $disetujui - $ditolak;
+
+        // Analisis per Unit Kerja
+        $analisisUnitKerja = $rencanaTerverifikasi->groupBy('dataPegawai.unitKerja.unit_kerja')
+            ->map(function ($item, $key) {
+                $totalAnggaran = $item->sum('anggaran_rencana');
+                $avgJam        = $item->avg('jam_pelajaran');
+                $approved      = $item->where('universitasCanApproving.status', 'disetujui')->count();
+                $rejected      = $item->where('universitasCanApproving.status', 'ditolak')->count();
+
+                return [
+                    'total'          => $item->count(),
+                    'total_anggaran' => $totalAnggaran,
+                    'avg_jam'        => round($avgJam, 1),
+                    'approved'       => $approved,
+                    'rejected'       => $rejected,
+                    'pending'        => $item->count() - $approved - $rejected,
+                    'avg_anggaran'   => round($totalAnggaran / $item->count(), 0),
+                ];
+            })->sortByDesc('total_anggaran');
+
+        // Analisis per Jenis Kegiatan
+        $analisisJenis = $rencanaTerverifikasi->groupBy(function ($item) {
+            return $item->dataPendidikan ? 'Pendidikan Formal' : 'Pelatihan';
+        })->map(function ($item) {
+            return [
+                'count'          => $item->count(),
+                'total_anggaran' => $item->sum('anggaran_rencana'),
+                'avg_anggaran'   => round($item->avg('anggaran_rencana'), 0),
+                'total_jam'      => $item->sum('jam_pelajaran'),
+                'approved'       => $item->where('universitasCanApproving.status', 'disetujui')->count(),
+            ];
+        });
+
+        // Analisis per Prioritas
+        $analisisPrioritas = $rencanaTerverifikasi->groupBy('prioritas')
+            ->map(function ($item) {
+                return [
+                    'count'          => $item->count(),
+                    'total_anggaran' => $item->sum('anggaran_rencana'),
+                    'approved_rate'  => $item->where('universitasCanApproving.status', 'disetujui')->count() / $item->count() * 100,
+                ];
+            });
+
+        // Analisis per Klasifikasi
+        $analisisKlasifikasi = $rencanaTerverifikasi->groupBy('klasifikasi')
+            ->map(function ($item) {
+                return [
+                    'count'          => $item->count(),
+                    'total_anggaran' => $item->sum('anggaran_rencana'),
+                    'avg_jam'        => round($item->avg('jam_pelajaran'), 1),
+                ];
+            });
+
+        // Trend per Tahun
+        $analisisTahun = $rencanaTerverifikasi->groupBy('tahun')
+            ->map(function ($item) {
+                return [
+                    'count'          => $item->count(),
+                    'total_anggaran' => $item->sum('anggaran_rencana'),
+                    'approved'       => $item->where('universitasCanApproving.status', 'disetujui')->count(),
+                    'avg_anggaran'   => round($item->avg('anggaran_rencana'), 0),
+                ];
+            })->sortKeys();
+
+        // Ringkasan Anggaran
+        $totalAnggaranAll  = $rencanaTerverifikasi->sum('anggaran_rencana');
+        $anggaranDisetujui = $rencanaTerverifikasi->where('universitasCanApproving.status', 'disetujui')->sum('anggaran_rencana');
+        $anggaranDitolak   = $rencanaTerverifikasi->where('universitasCanApproving.status', 'ditolak')->sum('anggaran_rencana');
+
+        return [
+            // Status Approval
+            'total'                    => $total,
+            'disetujui'                => $disetujui,
+            'ditolak'                  => $ditolak,
+            'belum'                    => $belum,
+            'persen_disetujui'         => $total > 0 ? round(($disetujui / $total) * 100, 1) : 0,
+            'persen_ditolak'           => $total > 0 ? round(($ditolak / $total) * 100, 1) : 0,
+            'persen_belum'             => $total > 0 ? round(($belum / $total) * 100, 1) : 0,
+
+            // Analisis Komprehensif
+            'analisis_unit_kerja'      => $analisisUnitKerja,
+            'analisis_jenis'           => $analisisJenis,
+            'analisis_prioritas'       => $analisisPrioritas,
+            'analisis_klasifikasi'     => $analisisKlasifikasi,
+            'analisis_tahun'           => $analisisTahun,
+
+            // Ringkasan Anggaran
+            'total_anggaran'           => $totalAnggaranAll,
+            'anggaran_disetujui'       => $anggaranDisetujui,
+            'anggaran_ditolak'         => $anggaranDitolak,
+            'anggaran_belum'           => $totalAnggaranAll - $anggaranDisetujui - $anggaranDitolak,
+
+            // Statistik Tambahan
+            'total_jam_pelajaran'      => $rencanaTerverifikasi->sum('jam_pelajaran'),
+            'avg_jam_per_rencana'      => round($rencanaTerverifikasi->avg('jam_pelajaran'), 1),
+            'avg_anggaran_per_rencana' => round($rencanaTerverifikasi->avg('anggaran_rencana'), 0),
+            'jumlah_unit_kerja'        => $analisisUnitKerja->count(),
+            'top_unit_kerja'           => $analisisUnitKerja->first(),
         ];
     }
 }

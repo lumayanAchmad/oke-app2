@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 use App\Models\CatatanVerifikasi;
 use App\Models\Kelompok;
 use App\Models\RencanaPembelajaran;
-use App\Models\unitKerjaCanVerifying;
+use App\Models\UnitKerjaCanVerifying;
 use App\Services\DeadlineService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -46,7 +47,7 @@ class unitKerjaCanVerifyingController extends Controller
             'ketua',
             'anggota.rencanaPembelajaran' => function ($query) {
                 $query->whereHas('kelompokCanValidating', fn($q) => $q->where('status', 'disetujui'))
-                    ->with(['dataPelatihan', 'dataPendidikan', 'bentukJalur', 'region', 'jenjang', 'unitKerjaCanVerifying', 'kelompokCanValidating.catatanValidasiKelompok']);
+                    ->with(['dataPelatihan', 'dataPendidikan', 'bentukJalur', 'region', 'jenjang', 'unitKerjaCanVerifying', 'universitasCanApproving', 'kelompokCanValidating.catatanValidasiKelompok']);
             },
         ])->whereHas('ketua', fn($q) => $q->where('unit_kerja_id', $unitKerjaId))
             ->get();
@@ -117,6 +118,8 @@ class unitKerjaCanVerifyingController extends Controller
             ]
         );
 
+        $rencana->update(['revisi_due_date' => null]);
+
         // Simpan catatan verifikasi jika ada
         if ($request->catatan) {
             CatatanVerifikasi::create([
@@ -174,6 +177,8 @@ class unitKerjaCanVerifyingController extends Controller
                     'status_revisi' => 'disetujui',
                 ]
             );
+
+            $rencana->update(['revisi_due_date' => null]);
 
             if ($catatanUmum) {
                 CatatanVerifikasi::create([
@@ -235,6 +240,11 @@ class unitKerjaCanVerifyingController extends Controller
             ]
         );
 
+        $newRevisionDueDate = Carbon::now()->addDays(3); // Beri waktu 3 hari
+        $rencana->update([
+            'revisi_due_date' => $newRevisionDueDate,
+        ]);
+
         // Simpan catatan verifikasi
         CatatanVerifikasi::create([
             'unit_kerja_can_verifying_id' => $verifikasi->id,
@@ -242,7 +252,7 @@ class unitKerjaCanVerifyingController extends Controller
         ]);
 
         return redirect()->route('verifikasi.index')
-            ->with('success', 'Revisi rencana behrasil dikirim ke pegawai!');
+            ->with('success', 'Revisi rencana berhasil dikirim ke pegawai! Tenggat: ' . $newRevisionDueDate->format('d M Y H:i'));
     }
 
     public function tambahRevisi(Request $request, $id)
@@ -259,14 +269,15 @@ class unitKerjaCanVerifyingController extends Controller
         }
 
         // Validasi input
-
         $request->validate([
             'catatan' => 'required|string|max:500',
         ]);
 
         // Pastikan status revisi sudah dikirim oleh pegawai
-        if ($rencana->unitKerjaCanVerifying->status_revisi !== 'sudah_direvisi') {return redirect()->route('verifikasi.index')
-                ->with('error', 'Pegawai belum mengirimkan revisi!');}
+        if ($rencana->unitKerjaCanVerifying->status_revisi !== 'sudah_direvisi') {
+            return redirect()->route('verifikasi.index')
+                ->with('error', 'Pegawai belum mengirimkan revisi!');
+        }
 
         // Update status revisi
         $verifikasi = unitKerjaCanVerifying::updateOrCreate(
@@ -280,6 +291,11 @@ class unitKerjaCanVerifyingController extends Controller
             ]
         );
 
+        $newRevisionDueDate = Carbon::now()->addDays(3); // Perpanjang 3 hari lagi
+        $rencana->update([
+            'revisi_due_date' => $newRevisionDueDate,
+        ]);
+
         // Simpan catatan revisi tambahan
         CatatanVerifikasi::create([
             'unit_kerja_can_verifying_id' => $verifikasi->id,
@@ -287,7 +303,7 @@ class unitKerjaCanVerifyingController extends Controller
         ]);
 
         return redirect()->route('verifikasi.index')
-            ->with('success', 'Revisi tambahan behrasil dikirim ke pegawai!');
+            ->with('success', 'Revisi tambahan berhasil dikirim ke pegawai! Tenggat: ' . $newRevisionDueDate->format('d M Y H:i'));
     }
 
     public function setujuiDariRevisi(Request $request, $id)
@@ -321,6 +337,8 @@ class unitKerjaCanVerifyingController extends Controller
             ]
         );
 
+        $rencana->update(['revisi_due_date' => null]);
+
         // Simpan catatan jika ada
         if ($request->catatan) {
             CatatanVerifikasi::create([
@@ -335,9 +353,20 @@ class unitKerjaCanVerifyingController extends Controller
 
     public function destroy($id)
     {
-        $validasi = unitKerjaCanVerifying::find($id);
+        // Eager load rencana dan approval universitas untuk pengecekan
+        $validasi = unitKerjaCanVerifying::with('rencanaPembelajaran.universitasCanApproving')->find($id);
 
-        // Cek tenggat waktu
+        if (! $validasi) {
+            return redirect()->route('verifikasi.index')->with('error', 'Data Rencana Tidak Ditemukan!');
+        }
+
+        // 1. Proteksi: Cek apakah sudah diproses Universitas
+        if ($validasi->rencanaPembelajaran && $validasi->rencanaPembelajaran->universitasCanApproving) {
+            return redirect()->route('verifikasi.index')
+                ->with('error', 'Gagal! Persetujuan tidak bisa dibatalkan karena sudah diproses oleh Universitas.');
+        }
+
+        // 2. Proteksi: Cek tenggat waktu
         $deadlineInfo     = $this->deadlineService->getDeadlineInfo('verifikasi_unit_kerja');
         $isWithinDeadline = $deadlineInfo['is_within_deadline'] ?? false;
 
@@ -346,18 +375,14 @@ class unitKerjaCanVerifyingController extends Controller
                 ->with('error', 'Tidak dapat mengedit verifikasi rencana di luar tenggat waktu yang ditentukan!');
         }
 
-        $catatan = CatatanVerifikasi::where('unit_kerja_can_verifying_id', $validasi->id);
-        if ($validasi) {
-            $validasi->delete();
-            $catatan->delete();
-            if ($validasi->status == 'disetujui') {
-                return redirect()->route('verifikasi.index')->with('success', 'Persetujuan Rencana Dibatalkan!');
-            } elseif ($validasi->status == 'ditolak') {
-                return redirect()->route('verifikasi.index')->with('success', 'Penolakan Rencana Dibatalkan!');
-            }
-        } else {
-            return redirect()->route('verifikasi.index')->with('error', 'Data Rencana Tidak Ditemukan!');
-        }
+        // Proses hapus catatan dan data verifikasi
+        CatatanVerifikasi::where('unit_kerja_can_verifying_id', $validasi->id)->delete();
+
+        $statusLama = $validasi->status;
+        $validasi->delete();
+
+        $message = ($statusLama == 'disetujui') ? 'Persetujuan Rencana Dibatalkan!' : 'Penolakan Rencana Dibatalkan!';
+        return redirect()->route('verifikasi.index')->with('success', $message);
     }
 
     public function batalkanMassal(Request $request)
@@ -365,31 +390,32 @@ class unitKerjaCanVerifyingController extends Controller
         $verifikasiIds = $request->input('verifikasi_ids', []);
 
         if (empty($verifikasiIds)) {
-            return redirect()->route('verifikasi.index')
-                ->with('error', 'Tidak ada persetujuan terpilih!');
+            return redirect()->route('verifikasi.index')->with('error', 'Tidak ada persetujuan terpilih!');
         }
 
+        // Cek tenggat waktu massal
         $deadlineInfo     = $this->deadlineService->getDeadlineInfo('verifikasi_unit_kerja');
         $isWithinDeadline = $deadlineInfo['is_within_deadline'] ?? false;
 
         if (! $isWithinDeadline) {
-            return redirect()->route('verifikasi.index')
-                ->with('error', 'Tenggat waktu verifikasi unit kerja sudah lewat!');
+            return redirect()->route('verifikasi.index')->with('error', 'Tenggat waktu verifikasi unit kerja sudah lewat!');
         }
 
         foreach ($verifikasiIds as $id) {
-            $validasi = unitKerjaCanVerifying::find($id);
-            if (! $validasi) {
+            // Ambil data beserta relasi universitas
+            $validasi = unitKerjaCanVerifying::with('rencanaPembelajaran.universitasCanApproving')->find($id);
+
+            // Skip jika data tidak ada atau SUDAH diproses Universitas
+            if (! $validasi || ($validasi->rencanaPembelajaran && $validasi->rencanaPembelajaran->universitasCanApproving)) {
                 continue;
             }
 
-            // Hapus catatan juga
+            // Hapus catatan dan data verifikasi
             CatatanVerifikasi::where('unit_kerja_can_verifying_id', $validasi->id)->delete();
             $validasi->delete();
         }
 
-        return redirect()->route('verifikasi.index')
-            ->with('success', 'Persetujuan terpilih berhasil dibatalkan!');
+        return redirect()->route('verifikasi.index')->with('success', 'Persetujuan terpilih yang memenuhi syarat berhasil dibatalkan!');
     }
 
 }

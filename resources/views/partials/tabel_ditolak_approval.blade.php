@@ -76,7 +76,8 @@
           </td>
 
           {{-- KETERANGAN --}}
-          <td class="px-1 text-center">
+          <td class="px-1">
+            <strong>Prioritas:</strong><br>
             @if ($rencanaPembelajaran->prioritas == 'rendah')
               <span class="badge rounded-pill text-bg-success" style="font-size: 0.7rem">Rendah</span>
             @elseif ($rencanaPembelajaran->prioritas == 'sedang')
@@ -86,22 +87,17 @@
             @endif
             {{-- Ketua Kelompok --}}
             <div class="text-start mt-2">
-              <span class="fw-semibold">Ketua:</span>
+              <span class="fw-semibold">Ketua Kelompok:</span>
               {{ optional($rencanaPembelajaran->dataPegawai->kelompok->ketua)->nama ?? '-' }}
             </div>
           </td>
 
-          {{-- CATATAN --}}
+          {{-- CATATAN DARI UNIVERSITAS --}}
           <td class="px-2">
-            <strong>Catatan :</strong>
-            @if (
-                $rencanaPembelajaran->unitKerjaCanVerifying &&
-                    $rencanaPembelajaran->unitKerjaCanVerifying->catatanVerifikasi->isNotEmpty())
-              <ul class="m-0 p-0">
-                @foreach ($rencanaPembelajaran->unitKerjaCanVerifying->catatanVerifikasi as $index => $catatan)
-                  <li><span>{{ $index + 1 }}.</span> {{ $catatan->catatan }}</li>
-                @endforeach
-              </ul>
+            <strong>Alasan Penolakan:</strong>
+            <br>
+            @if ($rencanaPembelajaran->universitasCanApproving && $rencanaPembelajaran->universitasCanApproving->catatan)
+              <span>{{ $rencanaPembelajaran->universitasCanApproving->catatan }}</span>
             @else
               <span class="text-muted">Tidak ada catatan</span>
             @endif

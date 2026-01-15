@@ -145,7 +145,7 @@ class DatabaseSeeder extends Seeder
             }
 
             // Menambahkan jenjang dalam array
-            $jenjangs = ['D1', 'D2', 'D3', 'S1', 'S2', 'S3'];
+            $jenjangs = ['S1', 'S2', 'S3'];
 
             // Menyimpan setiap jenjang ke dalam database
             foreach ($jenjangs as $jenjang) {
@@ -153,7 +153,7 @@ class DatabaseSeeder extends Seeder
             }
 
             // Menambahkan jenjang dalam array
-            $kategoris = ['perencanaan_pegawai', 'validasi_kelompok', 'verifikasi_unit_kerja', 'approval_universitas', 'revisi_pegawai'];
+            $kategoris = ['perencanaan_pegawai', 'validasi_kelompok', 'verifikasi_unit_kerja', 'approval_universitas'];
 
             // Menyimpan setiap role ke dalam database
             foreach ($kategoris as $kategori) {
@@ -174,42 +174,42 @@ class DatabaseSeeder extends Seeder
 
             // Seed data anggaran pendidikan
             AnggaranPendidikan::create([
-                'jenjang_id'    => 4,
+                'jenjang_id'    => 1,
                 'region_id'     => $nasional->id, // Menggunakan region_id dari tabel regions
                 'anggaran_min'  => 80000000,
                 'anggaran_maks' => 251200000,
             ]);
 
             AnggaranPendidikan::create([
-                'jenjang_id'    => 4,
+                'jenjang_id'    => 1,
                 'region_id'     => $internasional->id, // Menggunakan region_id dari tabel regions
                 'anggaran_min'  => 100000000,
                 'anggaran_maks' => 563150000,
             ]);
 
             AnggaranPendidikan::create([
-                'jenjang_id'    => 5,
+                'jenjang_id'    => 2,
                 'region_id'     => $nasional->id,
                 'anggaran_min'  => 200000000,
                 'anggaran_maks' => 247000000,
             ]);
 
             AnggaranPendidikan::create([
-                'jenjang_id'    => 5,
+                'jenjang_id'    => 2,
                 'region_id'     => $internasional->id,
                 'anggaran_min'  => 10000000,
                 'anggaran_maks' => 1217000000,
             ]);
 
             AnggaranPendidikan::create([
-                'jenjang_id'    => 6,
+                'jenjang_id'    => 3,
                 'region_id'     => $nasional->id,
                 'anggaran_min'  => 300000000,
                 'anggaran_maks' => 581000000,
             ]);
 
             AnggaranPendidikan::create([
-                'jenjang_id'    => 6,
+                'jenjang_id'    => 3,
                 'region_id'     => $internasional->id,
                 'anggaran_min'  => 2000000000,
                 'anggaran_maks' => 2705000000,

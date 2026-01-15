@@ -174,8 +174,8 @@
                     @php
                       $totalRencana =
                           $kelompokData['rencanaDisetujui']->count() +
-                          $kelompokData['rencanaDirevisi']->count() +
-                          $kelompokData['rencanaBelumDiverifikasi']->count();
+                          $kelompokData['rencanaBelumDiverifikasi']->count() +
+                          $kelompokData['rencanaDirevisi']->count();
                     @endphp
 
                     <ul class="nav nav-tabs px-3" role="tablist">
@@ -190,20 +190,20 @@
                       </li>
                       <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold" data-bs-toggle="tab"
-                          data-bs-target="#direvisi-{{ $kelompokData['kelompok']->id }}" type="button"
-                          role="tab">
-                          Revisi
-                          <span
-                            class="badge bg-warning ms-1 fs-1">{{ $kelompokData['rencanaDirevisi']->count() }}</span>
-                        </button>
-                      </li>
-                      <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold" data-bs-toggle="tab"
                           data-bs-target="#disetujui-{{ $kelompokData['kelompok']->id }}" type="button"
                           role="tab">
                           Disetujui
                           <span
                             class="badge bg-success ms-1 fs-1">{{ $kelompokData['rencanaDisetujui']->count() }}</span>
+                        </button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" data-bs-toggle="tab"
+                          data-bs-target="#direvisi-{{ $kelompokData['kelompok']->id }}" type="button"
+                          role="tab">
+                          Revisi
+                          <span
+                            class="badge bg-warning ms-1 fs-1">{{ $kelompokData['rencanaDirevisi']->count() }}</span>
                         </button>
                       </li>
                     </ul>
@@ -240,20 +240,6 @@
                         @endif
                       </div>
 
-                      <!-- Tab Disetujui -->
-                      <div class="tab-pane fade" id="disetujui-{{ $kelompokData['kelompok']->id }}" role="tabpanel">
-                        @if ($kelompokData['rencanaDisetujui']->isEmpty())
-                          <div class="alert alert-info m-2">
-                            <i class="ti ti-info-circle me-2"></i>Tidak ada rencana yang disetujui
-                          </div>
-                        @else
-                          @include('partials.tabel_disetujui_verifikasi', [
-                              'rencana' => $kelompokData['rencanaDisetujui'],
-                              'kelompok' => $kelompokData['kelompok'],
-                          ])
-                        @endif
-                      </div>
-
                       <!-- Tab Ditolak / Perlu Revisi -->
                       <div class="tab-pane fade" id="direvisi-{{ $kelompokData['kelompok']->id }}" role="tabpanel">
                         @if ($kelompokData['rencanaDirevisi']->isEmpty())
@@ -263,6 +249,20 @@
                         @else
                           @include('partials.tabel_direvisi_verifikasi', [
                               'rencana' => $kelompokData['rencanaDirevisi'],
+                              'kelompok' => $kelompokData['kelompok'],
+                          ])
+                        @endif
+                      </div>
+
+                      <!-- Tab Disetujui -->
+                      <div class="tab-pane fade" id="disetujui-{{ $kelompokData['kelompok']->id }}" role="tabpanel">
+                        @if ($kelompokData['rencanaDisetujui']->isEmpty())
+                          <div class="alert alert-info m-2">
+                            <i class="ti ti-info-circle me-2"></i>Tidak ada rencana yang disetujui
+                          </div>
+                        @else
+                          @include('partials.tabel_disetujui_verifikasi', [
+                              'rencana' => $kelompokData['rencanaDisetujui'],
                               'kelompok' => $kelompokData['kelompok'],
                           ])
                         @endif

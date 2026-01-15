@@ -11,6 +11,7 @@ use App\Http\Controllers\KelompokController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\RencanaPembelajaranController;
+use App\Http\Controllers\SuratRekomendasiController;
 use App\Http\Controllers\TenggatRencanaController;
 use App\Http\Controllers\unitKerjaCanVerifyingController;
 use App\Http\Controllers\universitasCanApprovingController;
@@ -41,6 +42,9 @@ Route::middleware([Authenticate::class, 'check.default.password'])->group(functi
     Route::get('/get-kategori-by-klasifikasi', [RencanaPembelajaranController::class, 'getKategori']);
     Route::post('/validasi-anggaran', [RencanaPembelajaranController::class, 'validasiAnggaran']);
     Route::get('/getPelatihanDetail/{id}', [RencanaPembelajaranController::class, 'getPelatihanDetail']);
+    // Download surat rekomendasi
+    Route::get('/rencana-pembelajaran/{id}/download-rekomendasi', [SuratRekomendasiController::class, 'downloadRekomendasi'])
+        ->name('rencana.download_rekomendasi');
 
     // EDIT AKSES
     Route::resource('edit_akses', EditAksesController::class);

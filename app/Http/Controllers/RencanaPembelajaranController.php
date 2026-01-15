@@ -12,10 +12,13 @@ use App\Models\DataPendidikan;
 use App\Models\JenisPendidikan;
 use App\Models\Jenjang;
 use App\Models\Kategori;
+use App\Models\Kelompok;
+use App\Models\KelompokCanValidating;
 use App\Models\Region;
 use App\Models\RencanaPembelajaran;
 use App\Models\Rumpun;
 use App\Services\DeadlineService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -186,38 +189,75 @@ class RencanaPembelajaranController extends Controller
      */
     public function edit(RencanaPembelajaran $rencanaPembelajaran)
     {
-        // Ambil data pegawai yang sedang login
+        // Cek Autentikasi dan Data Pegawai
+        if (! Auth::check()) {
+            return redirect()->route('login')->withErrors(['error' => 'Anda harus login terlebih dahulu untuk mengupdate rencana pembelajaran.']);
+        }
+
         $user    = Auth::user();
         $pegawai = $user->dataPegawai;
 
-        // Cek apakah pegawai sudah memiliki kelompok
         if (! $pegawai || ! $pegawai->kelompok_id) {
             return redirect()->back()
                 ->with('error', 'Anda belum dimasukkan ke dalam kelompok. Silakan hubungi administrator!');
         }
 
-        // Pastikan user login
-        if (! Auth::check()) {
-            return redirect()->route('login')->withErrors(['error' => 'Anda harus login terlebih dahulu untuk mengupdate rencana pembelajaran.']);
+        // 1. Cek Tenggat Global (Perencanaan Pegawai - untuk submit pertama)
+        $deadlineInfo           = $this->deadlineService->getDeadlineInfo('perencanaan_pegawai');
+        $isWithinGlobalDeadline = $deadlineInfo['is_within_deadline'] ?? false;
+
+        // 2. Cek Tenggat Revisi Kustom (revisi_due_date)
+        $isUnderCustomRevision    = false;
+        $isCurrentlyUnderRevision = false;
+
+        // Tentukan apakah rencana sedang direvisi oleh Kelompok ATAU Unit Kerja
+        $isUnderKelompokRevision = $rencanaPembelajaran->kelompokCanValidating
+        && $rencanaPembelajaran->kelompokCanValidating->status == 'direvisi';
+
+        $isUnderUnitKerjaRevision = $rencanaPembelajaran->unitKerjaCanVerifying
+        && $rencanaPembelajaran->unitKerjaCanVerifying->status == 'direvisi';
+
+        if ($isUnderKelompokRevision || $isUnderUnitKerjaRevision) {
+            $isCurrentlyUnderRevision = true;
+
+            // Cek apakah custom revision deadline-nya masih berlaku
+            if ($rencanaPembelajaran->revisi_due_date) {
+                $revisiDueDate = Carbon::parse($rencanaPembelajaran->revisi_due_date);
+
+                if (now()->lessThan($revisiDueDate)) {
+                    // Sedang direvisi DAN tenggat revisi kustom masih berlaku
+                    $isUnderCustomRevision = true;
+                } else {
+                    // Direvisi, tapi tenggat revisi kustom sudah habis. Blokir!
+                    return redirect()->route('rencana_pembelajaran.index')
+                        ->with('error', 'Tenggat waktu revisi telah berakhir!');
+                }
+            }
         }
 
-        // Cek tenggat waktu
-        $deadlineInfo     = $this->deadlineService->getDeadlineInfo('perencanaan_pegawai');
-        $isWithinDeadline = $deadlineInfo['is_within_deadline'] ?? false;
+        // Syarat Boleh Edit:
+        // a. Masih dalam Tenggat Global (saat submit pertama), ATAU
+        // b. Sedang dalam Status "direvisi" dan Tenggat Revisi Khusus (revisi_due_date) masih berlaku.
+        $canEdit = $isWithinGlobalDeadline || $isUnderCustomRevision;
 
-        if (! $isWithinDeadline) {
+        if (! $canEdit) {
+            // Blokir jika di luar kedua tenggat tersebut
             return redirect()->route('rencana_pembelajaran.index')
-                ->with('error', 'Tidak dapat menambahkan rencana pembelajaran di luar tenggat waktu yang ditentukan!');
+                ->with('error', 'Tidak dapat mengedit rencana pembelajaran di luar tenggat waktu yang ditentukan!');
         }
 
+        // Blokir jika sudah disetujui (dan belum dikembalikan revisi oleh level yang lebih tinggi)
         if ($rencanaPembelajaran->kelompokCanValidating && $rencanaPembelajaran->kelompokCanValidating->status == 'disetujui'
             && ($rencanaPembelajaran->unitKerjaCanVerifying == null || $rencanaPembelajaran->unitKerjaCanVerifying->status != 'direvisi')) {
+
             return redirect()->back()
                 ->with('error', 'Rencana pembelajaran ini telah disetujui dan tidak dapat diedit!');
         }
 
+        // Blokir jika revisi terakhir sudah selesai dan tidak ada permintaan revisi baru
         if ($rencanaPembelajaran->kelompokCanValidating && $rencanaPembelajaran->kelompokCanValidating->status_revisi == 'sudah_direvisi'
             && ($rencanaPembelajaran->unitKerjaCanVerifying == null || $rencanaPembelajaran->unitKerjaCanVerifying->status_revisi != 'direvisi')) {
+
             return redirect()->back()
                 ->with('error', 'Revisi sudah selesai dan tidak dapat diubah lagi!');
         }
@@ -229,26 +269,26 @@ class RencanaPembelajaranController extends Controller
 
         // Ambil rumpun yang sebelumnya dipilih berdasarkan data_pelatihan_id
         $rumpunTerpilih = $rencana->data_pelatihan_id
-        ? DataPelatihan::where('id', $rencana->data_pelatihan_id)->value('rumpun_id')
-        : null;
+            ? DataPelatihan::where('id', $rencana->data_pelatihan_id)->value('rumpun_id')
+            : null;
 
         // Ambil semua rumpun untuk dropdown
         $rumpun = Rumpun::all();
 
         // Ambil daftar nama pelatihan berdasarkan rumpun yang sebelumnya dipilih
         $pelatihan = $rumpunTerpilih
-        ? DataPelatihan::where('rumpun_id', $rumpunTerpilih)->get()
-        : collect(); // Jika belum ada rumpun, kosongkan
+            ? DataPelatihan::where('rumpun_id', $rumpunTerpilih)->get()
+            : collect(); // Jika belum ada rumpun, kosongkan
 
         // Nama Pelatihan yang sebelumnya dipilih
         $pelatihanTerpilih = DataPelatihan::find($rencana->data_pelatihan_id);
 
         // Ambil anggaran untuk pelatihan yang dipilih
         $anggaran = $pelatihanTerpilih
-        ? AnggaranPelatihan::where('data_pelatihan_id', $pelatihanTerpilih->id)
+            ? AnggaranPelatihan::where('data_pelatihan_id', $pelatihanTerpilih->id)
             ->with('region', 'kategori') // Memuat relasi region dan kategori
             ->get()
-        : collect(); // Jika tidak ada pelatihan terpilih, kosongkan anggaran
+            : collect(); // Jika tidak ada pelatihan terpilih, kosongkan anggaran
 
         // Kelompokkan anggaran berdasarkan region
         $anggaranGrouped = $anggaran->groupBy(function ($item) {
@@ -257,10 +297,10 @@ class RencanaPembelajaranController extends Controller
 
         // Ambil anggaran pendidikan (jika rencana bukan pelatihan)
         $anggaranPendidikan = $rencana->klasifikasi == 'pendidikan'
-        ? AnggaranPendidikan::where('jenjang_id', $rencana->jenjang_id)
+            ? AnggaranPendidikan::where('jenjang_id', $rencana->jenjang_id)
             ->with('region') // Memuat relasi region
             ->get()
-        : collect();
+            : collect();
 
         // Ambil semua jenjang
         $jenjang         = Jenjang::all();
@@ -435,23 +475,55 @@ class RencanaPembelajaranController extends Controller
     // UNTUK MENGAJUKAN VERIFIKASI DAN REVISI
     public function ajukanVerifikasi($id)
     {
+        // Pastikan models Kelompok, KelompokCanValidating, dan Auth di-import
         $rencana = RencanaPembelajaran::findOrFail($id);
+        $user    = Auth::user();
+        $pegawai = $user->dataPegawai;
 
-        // Cek tenggat waktu
+        // 1. Cek Batas Waktu
+        // Menggunakan deadline 'perencanaan_pegawai' sesuai permintaan Anda untuk batas waktu pengajuan
         $deadlineInfo     = $this->deadlineService->getDeadlineInfo('perencanaan_pegawai');
         $isWithinDeadline = $deadlineInfo['is_within_deadline'] ?? false;
+
         if (! $isWithinDeadline) {
             return redirect()->route('rencana_pembelajaran.index')
-                ->with('error', 'Tidak dapat menambahkan rencana pembelajaran di luar tenggat waktu yang ditentukan!');
+                ->with('error', 'Tidak dapat mengajukan rencana pembelajaran di luar tenggat waktu yang ditentukan!');
         }
 
+        // 2. Cek apakah rencana sudah pernah diajukan
         if ($rencana->status_pengajuan === 'draft') {
-            $rencana->update(['status_pengajuan' => 'diajukan']);
-            return redirect()->route('rencana_pembelajaran.index')
-                ->with('success', 'Rencana pembelajaran berhasil diajukan untuk diverifikasi!');
+
+            // 3. Cek Peran Pegawai (Ketua Kelompok atau Anggota Biasa)
+            // Asumsi: id_ketua di tabel kelompok mengacu pada id data_pegawai
+            $isKetua = Kelompok::where('id_ketua', $pegawai->id)->exists();
+
+            if ($isKetua) {
+                // KASUS A: KETUA KELOMPOK (Bypass Validasi Kelompok)
+
+                // Ini mencatat bahwa tahap Validasi Kelompok telah selesai
+                KelompokCanValidating::create([
+                    'kelompok_id'             => $pegawai->kelompok_id,
+                    'rencana_pembelajaran_id' => $rencana->id,
+                    'status'                  => 'disetujui', // Langsung disetujui (sebagai bypass)
+                    'status_revisi'           => '',          // Kosong
+                ]);
+
+                // 'pending_verifikasi' menunjukkan rencana sudah disetujui di level kelompok dan siap diverifikasi oleh Verifikator.
+                $rencana->update(['status_pengajuan' => 'pending_verifikasi']);
+
+                return redirect()->route('rencana_pembelajaran.index')
+                    ->with('success', 'Rencana berhasil diajukan dan langsung diteruskan ke Verifikator.');
+
+            } else {
+                $rencana->update(['status_pengajuan' => 'diajukan']);
+
+                return redirect()->route('rencana_pembelajaran.index')
+                    ->with('success', 'Rencana pembelajaran berhasil diajukan untuk divalidasi oleh Ketua Kelompok.');
+            }
         }
 
-        return redirect()->back()->with('error', 'Rencana tidak bisa diajukan.');
+        // Jika status bukan draft (sudah pernah diajukan atau sudah diproses)
+        return redirect()->back()->with('error', 'Rencana tidak bisa diajukan karena statusnya tidak dalam mode draft.');
     }
 
     public function kirimRevisi($id)
@@ -459,38 +531,51 @@ class RencanaPembelajaranController extends Controller
         $rencana = RencanaPembelajaran::with(['kelompokCanValidating', 'unitKerjaCanVerifying'])
             ->findOrFail($id);
 
-        // Cek tahap mana yang sedang dalam proses revisi
         $tahapRevisiAktif = null;
 
-        if ($rencana->unitKerjaCanVerifying && $rencana->unitKerjaCanVerifying->status_revisi == 'sedang_direvisi') {
+        if ($rencana->unitKerjaCanVerifying &&
+            ($rencana->unitKerjaCanVerifying->status == 'direvisi'
+                || $rencana->unitKerjaCanVerifying->status_revisi == 'perlu_revisi_ulang')) {
+
             $tahapRevisiAktif = 'unit_kerja';
-        } elseif ($rencana->kelompokCanValidating && $rencana->kelompokCanValidating->status_revisi == 'sedang_direvisi') {
+
+        } elseif ($rencana->kelompokCanValidating &&
+            $rencana->kelompokCanValidating->status == 'direvisi') {
+
             $tahapRevisiAktif = 'kelompok';
         }
 
-        // Jika tidak ada tahap yang sedang direvisi
         if (! $tahapRevisiAktif) {
             return redirect()->back()
                 ->with('error', 'Tidak ada revisi yang sedang dilakukan. Silakan lakukan revisi terlebih dahulu!');
         }
 
-        // Update status revisi berdasarkan tahap aktif
+        // cek status revisi
+        $statusRevisiSaatIni = $tahapRevisiAktif === 'unit_kerja'
+            ? $rencana->unitKerjaCanVerifying->status_revisi
+            : $rencana->kelompokCanValidating->status_revisi;
+
+        if ($statusRevisiSaatIni !== 'sedang_direvisi') {
+            return redirect()->back()
+                ->with('error', 'Anda belum melakukan revisi atau perubahan data.');
+        }
+
+        // Update status revisi → menjadi "sudah_direvisi"
         switch ($tahapRevisiAktif) {
             case 'unit_kerja':
-                $rencana->unitKerjaCanVerifying->status_revisi = 'sudah_direvisi';
-                $rencana->unitKerjaCanVerifying->save();
-
-                // Reset status di level kelompok jika perlu
-                if ($rencana->kelompokCanValidating) {
-                    $rencana->kelompokCanValidating->status_revisi = 'selesai';
-                    $rencana->kelompokCanValidating->save();
-                }
+                $verifikasiUnitKerja                = $rencana->unitKerjaCanVerifying;
+                $verifikasiUnitKerja->status_revisi = 'sudah_direvisi';
+                $verifikasiUnitKerja->save();
                 break;
 
             case 'kelompok':
                 $rencana->kelompokCanValidating->status_revisi = 'sudah_direvisi';
                 $rencana->kelompokCanValidating->save();
                 break;
+        }
+
+        if ($rencana->revisi_due_date !== null) {
+            $rencana->update(['revisi_due_date' => null]);
         }
 
         return redirect()->back()

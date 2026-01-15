@@ -11,6 +11,8 @@
             <div class=" fs-4 fw-semibold mb-3">
               @if ($kategoriTenggat->kategori_tenggat == 'perencanaan_pegawai')
                 Tenggat Perencanaan <span class="text-primary">Pegawai</span>
+              @elseif($kategoriTenggat->kategori_tenggat == 'revisi_pegawai')
+                Tenggat Revisi Pegawai <span class="text-danger">Revisi Pegawai</span>
               @elseif($kategoriTenggat->kategori_tenggat == 'validasi_kelompok')
                 Tenggat Rencana Validasi <span class="text-secondary">Kelompok</span>
               @elseif($kategoriTenggat->kategori_tenggat == 'verifikasi_unit_kerja')

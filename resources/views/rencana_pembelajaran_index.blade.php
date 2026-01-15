@@ -240,33 +240,48 @@
                   {{-- Validasi Kelompok --}}
                   <td class="px-2">
                     @if ($rencana->kelompokCanValidating)
-                      @if ($rencana->kelompokCanValidating->status == 'disetujui')
-                        <span class="badge text-bg-success fs-1">Disetujui</span><br>
+                      @php
+                        $status = $rencana->kelompokCanValidating->status;
+                        $badgeClass = $status == 'disetujui' ? 'text-bg-success' : 'text-bg-warning';
+                        $statusText = $status == 'disetujui' ? 'Disetujui' : 'Direvisi';
+                        $namaValidator = $rencana->kelompokCanValidating->kelompok->ketua->nama ?? 'Belum ditentukan';
+                      @endphp
+                      <span class="fw-semibold">Tahap:</span> <br>
+                      <span class="badge {{ $badgeClass }} fs-1">{{ $statusText }}</span><br>
+
+                      <div class="mt-1">
+                        <span class="fw-semibold">Validator:</span><br>
+                        <small class="text-muted">{{ $namaValidator }}</small>
+                      </div>
+
+                      @if ($status == 'direvisi' && $rencana->revisi_due_date)
+                        @php
+                          $deadline = \Carbon\Carbon::parse($rencana->revisi_due_date);
+                          $diff = now()->diff($deadline);
+                          $isOverdue = now()->greaterThan($deadline);
+                        @endphp
+                        <div class="mt-1 mb-1">
+                          <span class="fw-semibold">Sisa Waktu Revisi:</span><br>
+                          <span class="badge text-bg-{{ $isOverdue ? 'danger' : 'dark' }} fs-1">
+                            {{ $isOverdue ? 'Waktu Habis' : ($diff->d > 0 ? $diff->d . 'h ' : '') . $diff->h . 'j ' . $diff->i . 'm' }}
+                          </span>
+                        </div>
+                      @endif
+
+                      @if ($status == 'direvisi')
                         <span class="fw-semibold">Catatan:</span>
-                        @if ($rencana->kelompokCanValidating->catatanValidasiKelompok->count() > 0)
+                        @if ($catatan = $rencana->kelompokCanValidating->catatanValidasiKelompok)
                           <ul>
-                            @foreach ($rencana->kelompokCanValidating->catatanValidasiKelompok as $catatan)
-                              <li>{{ $catatan->catatan }}</li>
-                            @endforeach
-                          </ul>
-                        @else
-                          <div>-</div>
-                        @endif
-                      @elseif($rencana->kelompokCanValidating->status == 'direvisi')
-                        <span class="badge text-bg-warning fs-1">Direvisi</span>
-                        <span class="fw-semibold">Catatan:</span>
-                        @if ($rencana->kelompokCanValidating->catatanValidasiKelompok->count() > 0)
-                          <ul>
-                            @foreach ($rencana->kelompokCanValidating->catatanValidasiKelompok as $catatan)
-                              <li>{{ $catatan->catatan }}</li>
+                            @foreach ($catatan as $item)
+                              <li>{{ $item->catatan }}</li>
                             @endforeach
                           </ul>
                         @else
                           <div>-</div>
                         @endif
                       @endif
-                      <br>
                     @elseif($rencana->status_pengajuan === 'diajukan')
+                      <span class="fw-semibold">Tahap:</span>
                       <span class="badge text-bg-primary bg-opacity-75 fs-1">Ditinjau</span>
                     @else
                       <span style="font-size: 0.7rem">-</span>
@@ -276,41 +291,81 @@
                   {{-- Verifikasi Unit Kerja --}}
                   <td class="px-2">
                     @if ($rencana->unitKerjaCanverifying)
-                      @if ($rencana->unitKerjaCanverifying->status == 'disetujui')
-                        <span class="badge text-bg-success fs-1">Disetujui</span><br>
+                      @php
+                        $status = $rencana->unitKerjaCanverifying->status;
+                        $badgeClass = $status == 'disetujui' ? 'text-bg-success' : 'text-bg-warning';
+                        $statusText = $status == 'disetujui' ? 'Disetujui' : 'Direvisi';
+                        $namaVerifikator = $rencana->unitKerjaCanverifying->dataPegawai->nama ?? 'Nama tidak ditemukan';
+                      @endphp
+                      <span class="fw-semibold">Tahap:</span> <br>
+                      <span class="badge {{ $badgeClass }} fs-1">{{ $statusText }}</span><br>
+
+                      <div class="mt-1">
+                        <span class="fw-semibold">Verifikator:</span><br>
+                        <small class="text-muted">{{ $namaVerifikator }}</small>
+                      </div>
+
+                      @if ($status == 'direvisi' && $rencana->revisi_due_date)
+                        @php
+                          $deadline = \Carbon\Carbon::parse($rencana->revisi_due_date);
+                          $diff = now()->diff($deadline);
+                          $isOverdue = now()->greaterThan($deadline);
+                        @endphp
+                        <div class="mt-1 mb-1">
+                          <span class="fw-semibold">Sisa Waktu Revisi:</span><br>
+                          <span class="badge text-bg-{{ $isOverdue ? 'danger' : 'dark' }} fs-1">
+                            {{ $isOverdue ? 'Waktu Habis' : ($diff->d > 0 ? $diff->d . 'h ' : '') . $diff->h . 'j ' . $diff->i . 'm' }}
+                          </span>
+                        </div>
+                      @endif
+
+                      @if ($status == 'direvisi')
                         <span class="fw-semibold">Catatan:</span>
-                        @if ($rencana->unitKerjaCanverifying->catatanVerifikasi->count() > 0)
+                        @if ($catatan = $rencana->unitKerjaCanverifying->catatanVerifikasi)
                           <ul>
-                            @foreach ($rencana->unitKerjaCanverifying->catatanVerifikasi as $catatan)
-                              <li>{{ $catatan->catatan }}</li>
-                            @endforeach
-                          </ul>
-                        @else
-                          <div>-</div>
-                        @endif
-                      @elseif($rencana->unitKerjaCanverifying->status == 'direvisi')
-                        <span class="badge text-bg-warning fs-1">Direvisi</span>
-                        <span class="fw-semibold">Catatan:</span>
-                        @if ($rencana->unitKerjaCanverifying->catatanVerifikasi->count() > 0)
-                          <ul>
-                            @foreach ($rencana->unitKerjaCanverifying->catatanVerifikasi as $catatan)
-                              <li>{{ $catatan->catatan }}</li>
+                            @foreach ($catatan as $item)
+                              <li>{{ $item->catatan }}</li>
                             @endforeach
                           </ul>
                         @else
                           <div>-</div>
                         @endif
                       @endif
-                      <br>
                     @elseif($rencana->kelompokCanValidating && $rencana->kelompokCanValidating->status == 'disetujui')
+                      <span class="fw-semibold">Tahap:</span>
                       <span class="badge text-bg-primary bg-opacity-75 fs-1">Ditinjau</span>
                     @else
                       <span style="font-size: 0.7rem">-</span>
                     @endif
                   </td>
 
-                  {{-- validasi Universitas --}}
-                  <td class="px-2">-</td>
+                  {{-- Approval Universitas --}}
+                  <td class="px-2">
+                    @if ($rencana->universitasCanApproving)
+                      @php
+                        $approval = $rencana->universitasCanApproving;
+                        $status = $approval->status;
+                        $badgeClass = $status == 'disetujui' ? 'text-bg-success' : 'text-bg-danger';
+                        $statusText = $status == 'disetujui' ? 'Disetujui' : 'Ditolak';
+                      @endphp
+
+                      <span class="fw-semibold">Tahap:</span> <br>
+                      <span class="badge {{ $badgeClass }} fs-1">{{ $statusText }}</span>
+
+                      {{-- Tampilkan Alasan jika Ditolak --}}
+                      @if ($status == 'ditolak' && $approval->alasan_penolakan)
+                        <div class="mt-1">
+                          <span class="fw-semibold text-danger" style="font-size: 0.8rem">Alasan Penolakan:</span><br>
+                          <small class="text-muted italic">"{{ $approval->alasan_penolakan }}"</small>
+                        </div>
+                      @endif
+                    @elseif($rencana->unitKerjaCanverifying && $rencana->unitKerjaCanverifying->status == 'disetujui')
+                      <span class="fw-semibold">Tahap:</span> <br>
+                      <span class="badge text-bg-primary bg-opacity-75 fs-1">Ditinjau</span>
+                    @else
+                      <span style="font-size: 0.7rem">-</span>
+                    @endif
+                  </td>
 
                   {{-- RENCANA --}}
                   <td class="px-2">
@@ -320,7 +375,6 @@
                     </span>Rp{{ number_format($rencana->anggaran_rencana, 0, ',', '.') }}
                   </td>
 
-                  {{-- KETERANGAN --}}
                   <td class="px-2">
                     <span class="fw-semibold">Prioritas:</span>
                     @if ($rencana->prioritas == 'rendah')
@@ -330,10 +384,12 @@
                     @elseif ($rencana->prioritas == 'tinggi')
                       <span class="badge rounded-pill text-bg-danger" style="font-size: 0.7rem">Tinggi</span>
                     @endif
-                    <br><span class="fw-semibold">Status:</span>
-                    {{ ucwords($rencana->status_pengajuan) }}
-                  </td>
+                    <br>
 
+                    <span class="fw-semibold">Status:</span>
+                    {{ ucwords($rencana->status_pengajuan) }}
+                    <br>
+                  </td>
                   {{-- AKSI --}}
                   @if ($isWithinDeadline)
                     <td class="px-2">
@@ -341,11 +397,25 @@
                         @if ($rencana->kelompokCanValidating->status == 'disetujui')
                           {{-- Cek Unit Kerja --}}
                           @if ($rencana->unitKerjaCanverifying)
-                            @include('partials.rencana_aksi.aksi_unit_kerja_verifikasi', [
-                                'rencana' => $rencana,
-                            ])
+                            @if ($rencana->universitasCanApproving && $rencana->universitasCanApproving->status == 'disetujui')
+                              <strong>Download Surat Rekomendasi:</strong><br>
+                              <a href="{{ route('rencana.download_rekomendasi', $rencana->id) }}"
+                                class="btn btn-primary btn-sm mt-1" target="_blank" {{-- Agar terbuka di tab baru --}}
+                                style="font-size: 0.8rem">
+                                <span class="ti ti-file-download"></span>
+                              </a>
+                            @else
+                              {{-- Jika belum disetujui Univ, tampilkan aksi verifikasi unit kerja seperti biasa --}}
+                              @include('partials.rencana_aksi.aksi_unit_kerja_verifikasi', [
+                                  'rencana' => $rencana,
+                              ])
+                            @endif
                           @else
-                            <div class="fw-bold">*Rencana menunggu verifikasi Unit Kerja</div>
+                            <div class="alert alert-info p-2 mb-2" style="font-size: 0.75rem;">
+                              <span class="ti ti-clock"></span>
+                              <strong>Rencana Menunggu Verifikasi Unit Kerja</strong><br>
+                              Silahkan tunggu proses verifikasi oleh Unit Kerja
+                            </div>
                           @endif
                         @else
                           @include('partials.rencana_aksi.aksi_kelompok_validating', [
@@ -377,11 +447,21 @@
                           </form>
                         </div>
                       @else
-                        <div class="fw-bold">*Rencana mengunggu validasi Ketua Kelompok.</div>
+                        <div class="alert alert-warning p-2 mb-2" style="font-size: 0.75rem;">
+                          <span class="ti ti-clock"></span>
+                          <strong>Rencana Menunggu Validasi Ketua Kelompok</strong><br>
+                          Silahkan tunggu proses validasi oleh Ketua Kelompok
+                        </div>
                       @endif
                     </td>
                   @else
-                    <td class="px-2">Tidak dapat melakukan edit atau hapus di luar tenggat waktu</td>
+                    <td class="px-2">
+                      <div class="alert alert-danger p-2 mb-2" style="font-size: 0.75rem;">
+                        <span class="ti ti-clock-stop"></span>
+                        <strong>Tenggat Waktu Sudah Berakhir</strong><br>
+                        Tidak dapat melakukan edit atau hapus di luar tenggat waktu
+                      </div>
+                    </td>
                   @endif
                 </tr>
               @endforeach
@@ -392,84 +472,3 @@
     </div>
   </div>
 @endsection
-
-@push('alert-validasi-kelompok')
-  @if ($notifikasi['disetujui'] > 0)
-    <script>
-      Swal.fire({
-        icon: 'success',
-        title: 'Yeay.. Ada Rencana Disetujui!',
-        text: 'Ada {{ $notifikasi['disetujui'] }} rencana pembelajaran Anda telah disetujui.',
-        width: '400px',
-      });
-    </script>
-  @endif
-  @if ($notifikasi['direvisi'] > 0)
-    <script>
-      Swal.fire({
-        icon: 'warning',
-        title: 'Waduh.. Ada Rencana yang Perlu Revisi!',
-        text: 'Ada {{ $notifikasi['direvisi'] }} rencana pembelajaran anda yang mendapat revisi dari ketua kelompok.',
-        width: '400px',
-      });
-    </script>
-  @endif
-
-  <script>
-    document.querySelectorAll('.ajukanAlert').forEach(button => {
-      button.addEventListener('click', event => {
-        event.preventDefault();
-        let formId = button.getAttribute('data-form-id');
-        Swal.fire({
-          title: "Konfirmasi Data!",
-          text: "Data rencana anda akan tidak bisa dihapus atau diedit saat dalam proses validasi!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#13DEB9",
-          confirmButtonText: "Ajukan",
-          cancelButtonText: "Batal"
-        }).then(result => {
-          if (result.isConfirmed) {
-            document.getElementById(formId).submit();
-          }
-        });
-      });
-    });
-  </script>
-
-  <script>
-    document.querySelectorAll('.kirimRevisiAlert').forEach(button => {
-      button.addEventListener('click', event => {
-        event.preventDefault();
-
-        let formId = button.getAttribute('data-form-id');
-        let row = button.closest('tr');
-        let statusRevisiElement = row.querySelector('.badge.text-bg-danger');
-
-        if (statusRevisiElement && statusRevisiElement.textContent.trim() === 'Belum Direvisi') {
-          Swal.fire({
-            title: "Pengiriman Diblokir!",
-            text: "Anda tidak dapat mengirim revisi sebelum melakukan perubahan.",
-            icon: "error",
-            confirmButtonColor: "#FA896B",
-            confirmButtonText: "MENGERTI"
-          });
-        } else {
-          Swal.fire({
-            title: "Konfirmasi Pengiriman",
-            text: "Setelah dikirim, revisi tidak dapat diubah atau dihapus.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#13DEB9",
-            confirmButtonText: "Kirim",
-            cancelButtonText: "Batal"
-          }).then(result => {
-            if (result.isConfirmed) {
-              document.getElementById(formId).submit();
-            }
-          });
-        }
-      });
-    });
-  </script>
-@endpush

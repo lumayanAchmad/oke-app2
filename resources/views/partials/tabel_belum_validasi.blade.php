@@ -88,9 +88,11 @@
           {{-- AKSI --}}
           <td class="px-2">
             @if ($isNotStartedYet)
-              <span class="text-warning">
-                *Waktu validasi belum dimulai (mulai {{ $startDate->format('d M Y') }})
-              </span>
+              <div class="alert alert-warning p-2 mb-2">
+                <span class="ti ti-clock"></span>
+                <strong>Waktu Verifikasi Belum Dimulai!</strong><br>
+                Mulai {{ $startDate ? $startDate->format('d M Y') : '---' }}
+              </div>
             @elseif ($isWithinDeadline)
               <div class="btn-group" role="group">
                 {{-- Tombol Revisi --}}
@@ -168,10 +170,16 @@
 
               </div>
             @else
-              <span class="badge bg-light text-muted fs-2">
-                <i class="ti ti-clock fs-2 align-middle me-1"></i>
-                *Waktu validasi sudah berakhir (berakhir {{ $endDate->format('d M Y') }})
-              </span>
+              <div class="alert alert-danger p-2 mb-2">
+                <span class="ti ti-clock-stop"></span>
+                @if ($endDate)
+                  <strong>Waktu Verifikasi Sudah Berakhir!</strong><br>
+                  Berakhir {{ $endDate->format('d M Y') }}
+                @else
+                  <strong>Tenggat Waktu Belum Diatur!</strong><br>
+                  Hubungi Admin untuk informasi lebih lanjut
+                @endif
+              </div>
             @endif
           </td>
         </tr>

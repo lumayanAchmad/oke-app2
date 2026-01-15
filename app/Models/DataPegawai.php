@@ -50,4 +50,15 @@ class DataPegawai extends Model
     {
         return $this->belongsTo(PendidikanTerakhir::class);
     }
+
+    public function unitKerjaCanVerifying()
+    {
+        return $this->hasMany(unitKerjaCanVerifying::class);
+    }
+
+    public function universitasCanApproving()
+    {
+        return $this->hasMany(universitasCanApproving::class);
+    }
+
 }

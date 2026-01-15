@@ -3,7 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RencanaPembelajaran;
 use App\Models\UnitKerja;
-use App\Models\universitasCanApproving;
+use App\Models\UniversitasCanApproving;
 use App\Services\DeadlineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -139,111 +139,65 @@
             @endif
           </td>
         </tr>
+        <!-- Modal Tambah Revisi -->
+        <div class="modal fade" id="tambahRevisiModal-{{ $rencanaPembelajaran->id }}" tabindex="-1"
+          aria-labelledby="tambahRevisiModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5 fw-semibold">Tambah Revisi Rencana</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body border border-2 mx-3 rounded-2">
+                <form action="{{ route('validasi.tambah-revisi', $rencanaPembelajaran->id) }}" method="POST"
+                  id="tambahRevisiForm-{{ $rencanaPembelajaran->id }}">
+                  @csrf
+                  <div class="mb-3">
+                    <label for="tolak_catatan" class="form-label fw-semibold">Catatan:<span
+                        class="text-danger">*</span></label>
+                    <textarea class="form-control" name="catatan" rows="3" required></textarea>
+                  </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-warning tambahRevisiAlert"
+                  data-form-id="tambahRevisiForm-{{ $rencanaPembelajaran->id }}">Revisi</button>
+              </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {{-- Modal Setujui --}}
+        <div class="modal fade" id="setujuiModal-{{ $rencanaPembelajaran->id }}" tabindex="-1"
+          aria-labelledby="setujuiModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5 fw-semibold">Setujui Rencana</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body border border-2 mx-3 rounded-2">
+                <form action="{{ route('validasi.setujui-dari-revisi', $rencanaPembelajaran->id) }}" method="POST"
+                  id="setujuiDirevisiForm-{{ $rencanaPembelajaran->id }}">
+                  @csrf
+                  <div class="form-group">
+                    <div class="mb-2">
+                      <label for="setujui_catatan" class="form-label fw-semibold">Catatan: (opsional)</label>
+                      <textarea class="form-control" name="catatan" rows="3"></textarea>
+                    </div>
+                  </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-success setujuiDirevisiAlert"
+                  data-form-id="setujuiDirevisiForm-{{ $rencanaPembelajaran->id }}">Setujui</button>
+              </div>
+              </form>
+            </div>
+          </div>
+        </div>
       @endforeach
     </tbody>
   </table>
 </div>
-
-<!-- Modal Tambah Revisi -->
-<div class="modal fade" id="tambahRevisiModal-{{ $rencanaPembelajaran->id }}" tabindex="-1"
-  aria-labelledby="tambahRevisiModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5 fw-semibold">Tambah Revisi Rencana</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body border border-2 mx-3 rounded-2">
-        <form action="{{ route('validasi.tambah-revisi', $rencanaPembelajaran->id) }}" method="POST"
-          id="tambahRevisiForm-{{ $rencanaPembelajaran->id }}">
-          @csrf
-          <div class="mb-3">
-            <label for="tolak_catatan" class="form-label fw-semibold">Catatan:<span class="text-danger">*</span></label>
-            <textarea class="form-control" name="catatan" rows="3" required></textarea>
-          </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-warning tambahRevisiAlert"
-          data-form-id="tambahRevisiForm-{{ $rencanaPembelajaran->id }}">Revisi</button>
-      </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-{{-- Modal Setujui --}}
-<div class="modal fade" id="setujuiModal-{{ $rencanaPembelajaran->id }}" tabindex="-1"
-  aria-labelledby="setujuiModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5 fw-semibold">Setujui Rencana</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body border border-2 mx-3 rounded-2">
-        <form action="{{ route('validasi.setujui-dari-revisi', $rencanaPembelajaran->id) }}" method="POST"
-          id="setujuiDirevisiForm-{{ $rencanaPembelajaran->id }}">
-          @csrf
-          <div class="form-group">
-            <div class="mb-2">
-              <label for="setujui_catatan" class="form-label fw-semibold">Catatan: (opsional)</label>
-              <textarea class="form-control" name="catatan" rows="3"></textarea>
-            </div>
-          </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-success setujuiDirevisiAlert"
-          data-form-id="setujuiDirevisiForm-{{ $rencanaPembelajaran->id }}">Setujui</button>
-      </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-@push('alert-setujui-tolak')
-  <script>
-    document.querySelectorAll('.setujuiDirevisiAlert').forEach(button => {
-      button.addEventListener('click', event => {
-        event.preventDefault();
-        let formId = button.getAttribute('data-form-id');
-        Swal.fire({
-          title: "Konfirmasi Data!",
-          text: "Pastikan data yang anda isikan sudah benar!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#13DEB9",
-          confirmButtonText: "Setujui",
-          cancelButtonText: "Batal"
-        }).then(result => {
-          if (result.isConfirmed) {
-            document.getElementById(formId).submit();
-          }
-        });
-      });
-    });
-  </script>
-
-  <script>
-    document.querySelectorAll('.tambahRevisiAlert').forEach(button => {
-      button.addEventListener('click', event => {
-        event.preventDefault();
-        let formId = button.getAttribute('data-form-id');
-        Swal.fire({
-          title: "Konfirmasi Data!",
-          text: "Pastikan data yang anda isikan sudah benar!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#ffae1f",
-          confirmButtonText: "Revisi",
-          cancelButtonText: "Batal"
-        }).then(result => {
-          if (result.isConfirmed) {
-            document.getElementById(formId).submit();
-          }
-        });
-      });
-    });
-  </script>
-@endpush

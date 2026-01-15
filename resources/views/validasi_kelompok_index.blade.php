@@ -173,7 +173,7 @@
               </div>
             @else
               {{-- Ada data yang belum divalidasi --}}
-              @include('partials.tabel_belum_kelompok', ['rencana' => $rencanaBelumDivalidasi])
+              @include('partials.tabel_belum_validasi', ['rencana' => $rencanaBelumDivalidasi])
             @endif
 
           </div>
@@ -185,7 +185,7 @@
                 disetujui
               </div>
             @else
-              @include('partials.tabel_disetujui_kelompok', ['rencana' => $rencanaDisetujui])
+              @include('partials.tabel_disetujui_validasi', ['rencana' => $rencanaDisetujui])
             @endif
           </div>
 
@@ -196,7 +196,7 @@
                 revisi
               </div>
             @else
-              @include('partials.tabel_direvisi_kelompok', ['rencana' => $rencanaDirevisi])
+              @include('partials.tabel_direvisi_validasi', ['rencana' => $rencanaDirevisi])
             @endif
           </div>
         </div>

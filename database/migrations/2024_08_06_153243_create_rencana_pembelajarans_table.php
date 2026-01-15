@@ -26,6 +26,7 @@ return new class extends Migration
             $table->integer('anggaran_rencana');
             $table->string('prioritas');
             $table->string('status_pengajuan')->default('draft');
+            $table->datetime('revisi_due_date')->nullable();
             $table->timestamps();
         });
     }

@@ -31,8 +31,9 @@
           <thead>
             <th class="text-center">No.</th>
             <th>Ketua Kelompok</th>
-            <th>Unit Kerja</th>
             <th>NIP / NPPU</th>
+            <th>Unit Kerja</th>
+            <th>Email</th>
             <th class="text-center">AKSI</th>
           </thead>
           <tbody>
@@ -40,8 +41,9 @@
               <tr>
                 <td class="py-3 text-center"> {{ $loop->iteration }} </td>
                 <td class="py-3">{{ $item->ketua->nama }}</td>
-                <td class="py-3">{{ $item->ketua->unitKerja->unit_kerja }}</td>
                 <td class="py-3">{{ $item->ketua->nppu }}</td>
+                <td class="py-3">{{ $item->ketua->unitKerja->unit_kerja }}</td>
+                <td class="py-3">{{ $item->ketua->user->email }}</td>
                 <td class="py-3 text-center">
                   <div class="btn-group" role="group">
                     <button class="btn btn-primary btn-sm" style="font-size: 0.8rem" data-bs-toggle="modal"
@@ -69,7 +71,7 @@
                     <div class="modal-dialog modal-xl">
                       <div class="modal-content">
                         <div class="modal-header">
-                          <h1 class="modal-title fs-5 fw-bold" id="staticBackdropLabel{{ $item->id }}">
+                          <h1 class="modal-title fs-5 fw-semibold" id="staticBackdropLabel{{ $item->id }}">
                             Detail Kelompok <span class="text-primary">{{ $item->ketua->nama }}</span>
                           </h1>
                           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

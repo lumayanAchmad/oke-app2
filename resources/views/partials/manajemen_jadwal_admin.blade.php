@@ -69,16 +69,27 @@
           <div class="mb-3">
             @if ($jadwalPerencanaan['isActive'])
               @php
-                $totalDuration = $jadwalPerencanaan['waktuMulai']->diffInSeconds($jadwalPerencanaan['waktuSelesai']);
-                $elapsedDuration = Carbon\Carbon::now()->diffInSeconds($jadwalPerencanaan['waktuMulai']);
-                $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                $now = Carbon\Carbon::now();
+                $waktuMulai = $jadwalPerencanaan['waktuMulai'];
+                $waktuSelesai = $jadwalPerencanaan['waktuSelesai'];
+
+                // Pastikan waktu sudah dimulai
+                if ($now->lt($waktuMulai)) {
+                    $progressPercentage = 0;
+                } elseif ($now->gt($waktuSelesai)) {
+                    $progressPercentage = 100;
+                } else {
+                    $totalDuration = $waktuMulai->diffInSeconds($waktuSelesai);
+                    $elapsedDuration = $waktuMulai->diffInSeconds($now);
+                    $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                }
               @endphp
 
               <div class="d-flex justify-content-between mb-2">
                 <span class="text-success fw-semibold">
                   <i class="ti ti-clock me-1"></i> Sisa: {{ $jadwalPerencanaan['sisaHari'] }} hari
                 </span>
-                <span class="text-primary">{{ round($progressPercentage) }}%</span>
+                <span class="text-primary">{{ round($progressPercentage, 1) }}%</span>
               </div>
               <div class="progress" style="height: 8px;">
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar"
@@ -131,16 +142,27 @@
           <div class="mb-3">
             @if ($jadwalValidasi['isActive'])
               @php
-                $totalDuration = $jadwalValidasi['waktuMulai']->diffInSeconds($jadwalValidasi['waktuSelesai']);
-                $elapsedDuration = Carbon\Carbon::now()->diffInSeconds($jadwalValidasi['waktuMulai']);
-                $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                $now = Carbon\Carbon::now();
+                $waktuMulai = $jadwalValidasi['waktuMulai'];
+                $waktuSelesai = $jadwalValidasi['waktuSelesai'];
+
+                // Pastikan waktu sudah dimulai
+                if ($now->lt($waktuMulai)) {
+                    $progressPercentage = 0;
+                } elseif ($now->gt($waktuSelesai)) {
+                    $progressPercentage = 100;
+                } else {
+                    $totalDuration = $waktuMulai->diffInSeconds($waktuSelesai);
+                    $elapsedDuration = $waktuMulai->diffInSeconds($now);
+                    $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                }
               @endphp
 
               <div class="d-flex justify-content-between mb-2">
                 <span class="text-success fw-semibold">
                   <i class="ti ti-clock me-1"></i> Sisa: {{ $jadwalValidasi['sisaHari'] }} hari
                 </span>
-                <span class="text-primary">{{ round($progressPercentage) }}%</span>
+                <span class="text-primary">{{ round($progressPercentage, 1) }}%</span>
               </div>
               <div class="progress" style="height: 8px;">
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
@@ -195,16 +217,26 @@
           <div class="mb-3">
             @if ($jadwalVerifikasi['isActive'])
               @php
-                $totalDuration = $jadwalVerifikasi['waktuMulai']->diffInSeconds($jadwalVerifikasi['waktuSelesai']);
-                $elapsedDuration = Carbon\Carbon::now()->diffInSeconds($jadwalVerifikasi['waktuMulai']);
-                $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                $now = Carbon\Carbon::now();
+                $waktuMulai = $jadwalVerifikasi['waktuMulai'];
+                $waktuSelesai = $jadwalVerifikasi['waktuSelesai'];
+
+                if ($now->lt($waktuMulai)) {
+                    $progressPercentage = 0;
+                } elseif ($now->gt($waktuSelesai)) {
+                    $progressPercentage = 100;
+                } else {
+                    $totalDuration = $waktuMulai->diffInSeconds($waktuSelesai);
+                    $elapsedDuration = $waktuMulai->diffInSeconds($now);
+                    $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                }
               @endphp
 
               <div class="d-flex justify-content-between mb-2">
                 <span class="text-success fw-semibold">
                   <i class="ti ti-clock me-1"></i> Sisa: {{ $jadwalVerifikasi['sisaHari'] }} hari
                 </span>
-                <span class="text-primary">{{ round($progressPercentage) }}%</span>
+                <span class="text-primary">{{ round($progressPercentage, 1) }}%</span>
               </div>
               <div class="progress" style="height: 8px;">
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar"
@@ -258,16 +290,26 @@
           <div class="mb-3">
             @if ($jadwalApproval['isActive'])
               @php
-                $totalDuration = $jadwalApproval['waktuMulai']->diffInSeconds($jadwalApproval['waktuSelesai']);
-                $elapsedDuration = Carbon\Carbon::now()->diffInSeconds($jadwalApproval['waktuMulai']);
-                $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                $now = Carbon\Carbon::now();
+                $waktuMulai = $jadwalApproval['waktuMulai'];
+                $waktuSelesai = $jadwalApproval['waktuSelesai'];
+
+                if ($now->lt($waktuMulai)) {
+                    $progressPercentage = 0;
+                } elseif ($now->gt($waktuSelesai)) {
+                    $progressPercentage = 100;
+                } else {
+                    $totalDuration = $waktuMulai->diffInSeconds($waktuSelesai);
+                    $elapsedDuration = $waktuMulai->diffInSeconds($now);
+                    $progressPercentage = min(100, max(0, ($elapsedDuration / $totalDuration) * 100));
+                }
               @endphp
 
               <div class="d-flex justify-content-between mb-2">
                 <span class="text-success fw-semibold">
                   <i class="ti ti-clock me-1"></i> Sisa: {{ $jadwalApproval['sisaHari'] }} hari
                 </span>
-                <span class="text-primary">{{ round($progressPercentage) }}%</span>
+                <span class="text-primary">{{ round($progressPercentage, 1) }}%</span>
               </div>
               <div class="progress" style="height: 8px;">
                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar"

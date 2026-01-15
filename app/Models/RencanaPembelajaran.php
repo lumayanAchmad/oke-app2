@@ -9,10 +9,6 @@ class RencanaPembelajaran extends Model
     use HasFactory;
     protected $guarded = [];
 
-    /**
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function dataPegawai()
     {
         return $this->belongsTo(DataPegawai::class);
@@ -61,5 +57,10 @@ class RencanaPembelajaran extends Model
     public function universitasCanApproving()
     {
         return $this->hasOne(universitasCanApproving::class, 'rencana_pembelajaran_id');
+    }
+
+    public function suratRekomendasi()
+    {
+        return $this->hasOne(SuratRekomendasi::class, 'rencana_pembelajaran_id');
     }
 }

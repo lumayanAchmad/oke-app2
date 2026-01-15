@@ -96,9 +96,9 @@
                   </div>
                 </div>
                 <div class="col-md-4 mb-2">
-                  <div class="border rounded p-3 bg-secondary bg-opacity-10">
-                    <h3 class="fw-bold text-secondary mb-1">{{ $statistikValidasiKetua['belum'] }}</h3>
-                    <p class="mb-0 small text-muted">Belum Divalidasi</p>
+                  <div class="border rounded p-3" style="background-color: rgba(149, 149, 149, 0.1);">
+                    <h3 class="fw-bold mb-1" style="color: #959595">{{ $statistikValidasiKetua['belum'] }}</h3>
+                    <p class="mb-0 small text-muted" style="color: #959595">Belum Divalidasi</p>
                   </div>
                 </div>
               </div>

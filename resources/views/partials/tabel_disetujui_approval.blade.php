@@ -92,7 +92,7 @@
             @endif
             {{-- Ketua Kelompok --}}
             <div class="text-start mt-2">
-              <span class="fw-semibold">Ketua:</span>
+              <span class="fw-semibold">Ketua Kelompok:</span>
               {{ optional($rencanaPembelajaran->dataPegawai->kelompok->ketua)->nama ?? '-' }}
             </div>
           </td>

@@ -12,6 +12,7 @@
             <th class="text-center">No.</th>
             <th>Nama</th>
             <th>Unit Kerja</th>
+            <th>Email</th>
             <th>Hak Akses</th>
             <th>Aksi</th>
           </thead>
@@ -21,20 +22,49 @@
                 <td class="py-2 text-center">{{ $loop->iteration }}</td>
                 <td class="py-2">{{ $user->name }}</td>
                 <td class="py-2">{{ $user->dataPegawai->unitKerja->unit_kerja }}</td>
+                <td class="py-2">{{ $user->email }}</td>
                 <td class="py-2">
-                  {{-- Tampilkan daftar roles user --}}
+                  {{-- Tampilkan daftar roles user dengan warna dan font yang berbeda --}}
                   @foreach ($user->roles as $role)
-                    <span class="badge bg-secondary fs-2">{{ ucwords(str_replace('_', ' ', $role->role)) }}</span>
+                    @php
+                      // Tentukan warna berdasarkan nama role (diambil dari kolom 'role')
+                      $roleName = str_replace('_', ' ', $role->role);
+                      $badgeClass = 'bg-secondary';
+                      switch (strtolower($roleName)) {
+                          case 'admin':
+                              $badgeClass = 'bg-danger';
+                              break;
+                          case 'pimpinan':
+                              $badgeClass = 'bg-dark';
+                              break;
+                          case 'approver':
+                              $badgeClass = 'bg-success';
+                              break;
+                          case 'verifikator':
+                              $badgeClass = 'bg-secondary';
+                              break;
+                          case 'ketua_kelompok':
+                              $badgeClass = 'bg-warning';
+                              break;
+                          case 'pegawai':
+                              $badgeClass = 'bg-primary';
+                              break;
+                          default:
+                              $badgeClass = 'bg-secondary'; // Abu-abu untuk role lain
+                              break;
+                      }
+                    @endphp
+                    <span class="badge {{ $badgeClass }} d-block mb-1" style="font-size: 0.7rem;">
+                      {{ ucwords($roleName) }}
+                    </span>
                   @endforeach
                 </td>
                 <td class="py-2">
-                  <!-- Tombol untuk memunculkan modal -->
                   <a href="#" class="btn btn-warning btn-sm col" data-bs-toggle="modal"
                     data-bs-target="#editAksesModal{{ $user->id }}">
                     <span class="ti ti-pencil"></span>
                   </a>
 
-                  <!-- Modal Bootstrap -->
                   <div class="modal fade" id="editAksesModal{{ $user->id }}" aria-labelledby="editAksesModalLabel"
                     data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog">
@@ -53,14 +83,17 @@
                               <label for="roles" class="fw-bolder mb-2 fs-4">Hak Akses</label>
                               {{-- Checkbox roles --}}
                               @foreach ($roles as $role)
-                                <div class="form-check">
-                                  <input type="checkbox" name="roles[]" id="role_{{ $role->id }}"
-                                    value="{{ $role->id }}" class="form-check-input"
-                                    {{ in_array($role->id, $user->roles->pluck('id')->toArray()) ? 'checked' : '' }}>
-                                  <label class="form-check-label" for="role_{{ $role->id }}">
-                                    {{ ucwords(str_replace('_', ' ', $role->role)) }}
-                                  </label>
-                                </div>
+                                {{-- HANYA TAMPILKAN ROLE SELAIN 'KETUA KELOMPOK' --}}
+                                @if (strtolower($role->role) !== 'ketua_kelompok')
+                                  <div class="form-check">
+                                    <input type="checkbox" name="roles[]" id="role_{{ $role->id }}"
+                                      value="{{ $role->id }}" class="form-check-input"
+                                      {{ in_array($role->id, $user->roles->pluck('id')->toArray()) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="role_{{ $role->id }}">
+                                      {{ ucwords(str_replace('_', ' ', $role->role)) }}
+                                    </label>
+                                  </div>
+                                @endif
                               @endforeach
                             </div>
                           </div>

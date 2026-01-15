@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('universitas_can_approvings', function (Blueprint $table) {
+        Schema::create('surat_rekomendasis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('data_pegawai_id');
             $table->foreignId('rencana_pembelajaran_id');
-            $table->string('status');
-            $table->string('catatan')->nullable();
+            $table->string('nomor_surat')->unique();
+            $table->string('kode_verifikasi')->unique();
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('universitas_can_approvings');
+        Schema::dropIfExists('surat_rekomendasis');
     }
 };

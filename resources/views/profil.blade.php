@@ -187,7 +187,7 @@
               <div class="col-md-6">
                 <div class="bg-light rounded p-3 d-flex align-items-center">
                   <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
-                    <i class="ti ti-users-group text-warning fs-5"></i>
+                    <i class="ti ti-sitemap text-warning fs-5"></i>
                   </div>
                   <div>
                     <p class="mb-0 small text-muted">Kelompok</p>
@@ -356,6 +356,11 @@
   {{-- ROW 5: STATISTIK KHUSUS KETUA KELOMPOK --}}
   @can('verifikator')
     @include('partials.statistik.unit_kerja')
+  @endcan
+
+  {{-- ROW 5: STATISTIK KHUSUS APPROVER --}}
+  @can('approver')
+    @include('partials.statistik.universitas')
   @endcan
 
 @endsection
