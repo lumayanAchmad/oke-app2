@@ -16,9 +16,6 @@ use Maatwebsite\Excel\Validators\ValidationException;
 
 class DataPelatihanController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $dataPelatihan = DataPelatihan::with('anggaranPelatihan', 'rumpun')->latest()->get();
@@ -26,17 +23,6 @@ class DataPelatihanController extends Controller
         return view('data_pelatihan_index', compact('dataPelatihan'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreDataPelatihanRequest $request)
     {
         // Validasi sudah dilakukan di StoreDataPelatihanRequest
@@ -101,14 +87,6 @@ class DataPelatihanController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(DataPelatihan $dataPelatihan)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      */
     public function edit(string $id)
@@ -119,9 +97,6 @@ class DataPelatihanController extends Controller
         return view('data_pelatihan_edit', compact('dataPelatihan', 'rumpuns'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateDataPelatihanRequest $request, $id)
     {
         // Ambil data pelatihan berdasarkan ID
@@ -152,9 +127,6 @@ class DataPelatihanController extends Controller
             ->with('success', 'Data pelatihan berhasil diupdate!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(DataPelatihan $dataPelatihan)
     {
         $dataPelatihan->delete();

@@ -7,10 +7,6 @@ use Illuminate\Http\Request;
 
 class TenggatRencanaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    // Controller
     public function index()
     {
         $kategoriTenggats = KategoriTenggat::with('tenggatRencana')->get();
@@ -18,9 +14,6 @@ class TenggatRencanaController extends Controller
         return view('tenggat_rencana_index', compact('kategoriTenggats'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -58,13 +51,5 @@ class TenggatRencanaController extends Controller
             // Set message tidak ada perubahan
             return redirect()->back()->with('info', 'Tidak ada perubahan data');
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

@@ -109,44 +109,39 @@
             </li>
           @endcan
 
-          {{-- RENCANA PEMBELAJARAN --}}
-          <li class="nav-small-cap mt-2">
-            <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-            <span class="hide-menu">Rencana Pembelajaran (RPP)</span>
-          </li>
+          @can('pegawai')
+            {{-- RENCANA PEMBELAJARAN --}}
+            <li class="nav-small-cap mt-2">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">Rencana Pembelajaran (RPP)</span>
+            </li>
 
-          <li class="sidebar-item {{ Request::is('rencana_pembelajaran*') ? 'selected' : '' }}">
-            <a class="sidebar-link css-hover-animation" href="/rencana_pembelajaran" aria-expanded="false">
-              <span>
-                <i class="ti ti-bookmarks "></i>
-              </span>
-              <span class="hide-menu">RPP Anda</span>
-            </a>
-          </li>
-          @can('admin')
-            <li class="sidebar-item {{ Request::is('rpp_isidental*') ? 'selected' : '' }}">
-              <a class="sidebar-link css-hover-animation" href="/rpp_isidental" aria-expanded="false">
+            <li class="sidebar-item {{ Request::is('rencana_pembelajaran*') ? 'selected' : '' }}">
+              <a class="sidebar-link css-hover-animation" href="/rencana_pembelajaran" aria-expanded="false">
                 <span>
-                  <i class="ti ti-file-alert "></i>
+                  <i class="ti ti-bookmarks "></i>
                 </span>
-                <span class="hide-menu">RPP Isidental</span>
+                <span class="hide-menu">RPP Anda</span>
               </a>
             </li>
-          @endcan
+          @endcannot
 
-          {{-- KELOMPOK --}}
-          <li class="nav-small-cap mt-2">
-            <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-            <span class="hide-menu">Kelompok</span>
-          </li>
-          <li class="sidebar-item {{ Request::is('anggota_kelompok*') ? 'selected' : '' }}">
-            <a class="sidebar-link css-hover-animation" href="/anggota_kelompok" aria-expanded="false">
-              <span>
-                <i class="ti ti-sitemap"></i>
-              </span>
-              <span class="hide-menu">Kelompok Anda</span>
-            </a>
-          </li>
+          @can('pegawai')
+            {{-- KELOMPOK --}}
+            <li class="nav-small-cap mt-2">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">Kelompok</span>
+            </li>
+            <li class="sidebar-item {{ Request::is('anggota_kelompok*') ? 'selected' : '' }}">
+              <a class="sidebar-link css-hover-animation" href="/anggota_kelompok" aria-expanded="false">
+                <span>
+                  <i class="ti ti-sitemap"></i>
+                </span>
+                <span class="hide-menu">Kelompok Anda</span>
+              </a>
+            </li>
+          @endcannot
+
           @can('ketua_kelompok')
             <li class="sidebar-item {{ Request::is('validasi_kelompok*') ? 'selected' : '' }}">
               <a class="sidebar-link css-hover-animation" href="/validasi_kelompok" aria-expanded="false">
@@ -189,20 +184,6 @@
               </a>
             </li>
           @endcan
-
-          {{-- LAPORAN --}}
-          <li class="nav-small-cap mt-2">
-            <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
-            <span class="hide-menu">Laporan</span>
-          </li>
-          <li class="sidebar-item {{ Request::is('laporan*') ? 'selected' : '' }}">
-            <a class="sidebar-link css-hover-animation" href="/analisa_jp" aria-expanded="false">
-              <span>
-                <i class="ti ti-clock "></i>
-              </span>
-              <span class="hide-menu">Analisa JP</span>
-            </a>
-          </li>
         </ul>
       </nav>
     </div>

@@ -1,5 +1,5 @@
 {{-- ROW 6: STATISTIK KOMPREHENSIF APPROVER UNIVERSITAS --}}
-@if (in_array('approver', $roles) && $statistikApprovalUniversitas)
+@if ((in_array('approver', $roles) || in_array('pimpinan', $roles)) && $statistikApprovalUniversitas)
   <div class="row">
     <div class="col-12">
       <div class="card">
@@ -93,27 +93,27 @@
                       </div>
                     </div>
                   </div>
-                  <div class="progress-stacked" style="height: 30px;">
-                    <div class="progress" role="progressbar"
-                      style="width: {{ $statistikApprovalUniversitas['persen_disetujui'] }}%; background-color: #198754;"
-                      data-bs-toggle="tooltip"
+                  <div class="progress mb-4" style="height: 25px;">
+                    <div class="progress-bar bg-success fw-bold"
+                      style="width: {{ $statistikApprovalUniversitas['persen_disetujui'] }}%;" role="progressbar"
+                      aria-valuenow="{{ $statistikApprovalUniversitas['persen_disetujui'] }}" aria-valuemin="0"
+                      aria-valuemax="100" data-bs-toggle="tooltip"
                       title="Disetujui: {{ $statistikApprovalUniversitas['disetujui'] }} rencana (Rp {{ number_format($statistikApprovalUniversitas['anggaran_disetujui'], 0, ',', '.') }})">
-                      <div class="progress-bar overflow-visible text-dark fw-bold">
-                        {{ $statistikApprovalUniversitas['persen_disetujui'] }}%</div>
+                      {{ $statistikApprovalUniversitas['persen_disetujui'] }}%
                     </div>
-                    <div class="progress" role="progressbar"
-                      style="width: {{ $statistikApprovalUniversitas['persen_ditolak'] }}%; background-color: #dc3545;"
-                      data-bs-toggle="tooltip"
+                    <div class="progress-bar bg-danger fw-bold"
+                      style="width: {{ $statistikApprovalUniversitas['persen_ditolak'] }}%;" role="progressbar"
+                      aria-valuenow="{{ $statistikApprovalUniversitas['persen_ditolak'] }}" aria-valuemin="0"
+                      aria-valuemax="100" data-bs-toggle="tooltip"
                       title="Ditolak: {{ $statistikApprovalUniversitas['ditolak'] }} rencana (Rp {{ number_format($statistikApprovalUniversitas['anggaran_ditolak'], 0, ',', '.') }})">
-                      <div class="progress-bar overflow-visible text-light fw-bold">
-                        {{ $statistikApprovalUniversitas['persen_ditolak'] }}%</div>
+                      {{ $statistikApprovalUniversitas['persen_ditolak'] }}%
                     </div>
-                    <div class="progress" role="progressbar"
+                    <div class="progress-bar fw-bold"
                       style="width: {{ $statistikApprovalUniversitas['persen_belum'] }}%; background-color: #6c757d;"
-                      data-bs-toggle="tooltip"
+                      role="progressbar" aria-valuenow="{{ $statistikApprovalUniversitas['persen_belum'] }}"
+                      aria-valuemin="0" aria-valuemax="100" data-bs-toggle="tooltip"
                       title="Belum: {{ $statistikApprovalUniversitas['belum'] }} rencana (Rp {{ number_format($statistikApprovalUniversitas['anggaran_belum'], 0, ',', '.') }})">
-                      <div class="progress-bar overflow-visible text-light fw-bold">
-                        {{ $statistikApprovalUniversitas['persen_belum'] }}%</div>
+                      {{ $statistikApprovalUniversitas['persen_belum'] }}%
                     </div>
                   </div>
                 </div>
@@ -143,7 +143,7 @@
                   </h6>
                 </div>
                 <div class="card-body">
-                  <canvas id="unitKerjaChart" height="300"></canvas>
+                  <canvas id="unitKerjaChart" height="200"></canvas>
                 </div>
               </div>
             </div>
@@ -179,15 +179,15 @@
 
           {{-- TABEL DETAIL UNIT KERJA --}}
           <div class="card mb-1 shadow-none border">
-            <div class="card-header bg-dark bg-opacity-10">
-              <h6 class="card-title mb-0 fw-bold text-dark">
+            <div class="card-header bg-secondary bg-opacity-10">
+              <h6 class="card-title mb-0 fw-bold text-secondary">
                 <i class="ti ti-table me-1"></i>Rincian Per Unit Kerja
               </h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3">
               <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                  <thead class="table-light">
+                <table class="table table-hover">
+                  <thead>
                     <tr>
                       <th>Unit Kerja</th>
                       <th>Total Rencana</th>
@@ -206,9 +206,9 @@
                         $approvalRate = $data['total'] > 0 ? round(($data['approved'] / $data['total']) * 100, 1) : 0;
                       @endphp
                       <tr>
-                        <td class="fw-medium">{{ $unit }}</td>
+                        <td>{{ $unit }}</td>
                         <td><span class="badge bg-primary">{{ $data['total'] }}</span></td>
-                        <td class="fw-bold">Rp {{ number_format($data['total_anggaran'], 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($data['total_anggaran'], 0, ',', '.') }}</td>
                         <td>Rp {{ number_format($data['avg_anggaran'], 0, ',', '.') }}</td>
                         <td>{{ $data['avg_jam'] }} jam</td>
                         <td><span class="badge bg-success">{{ $data['approved'] }}</span></td>

@@ -1,14 +1,11 @@
 <?php
-
 namespace App\Providers;
 
 use App\Models\User;
-use Illuminate\Support\Str;
-use App\Models\TenggatRencana;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use App\Observers\TenggatRencanaObserver;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,29 +24,34 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrap();
 
-        Gate::define('admin', function(User $user) {
+        Gate::define('admin', function (User $user) {
             // Mengecek apakah user memiliki role 'admin' dalam relasi roles
             return $user->roles->contains('role', 'admin');
         });
 
-        Gate::define('pegawai', function(User $user) {
+        Gate::define('pegawai', function (User $user) {
             // Mengecek apakah user memiliki role 'pegawai' dalam relasi roles
             return $user->roles->contains('role', 'pegawai');
         });
 
-        Gate::define('ketua_kelompok', function(User $user) {
+        Gate::define('ketua_kelompok', function (User $user) {
             // Mengecek apakah user memiliki role 'ketua_kelompok' dalam relasi roles
             return $user->roles->contains('role', 'ketua_kelompok');
         });
 
-        Gate::define('verifikator', function(User $user) {
+        Gate::define('verifikator', function (User $user) {
             // Mengecek apakah user memiliki role 'verifikator' dalam relasi roles
             return $user->roles->contains('role', 'verifikator');
         });
-        
-        Gate::define('approver', function(User $user) {
+
+        Gate::define('approver', function (User $user) {
             // Mengecek apakah user memiliki role 'approver' dalam relasi roles
             return $user->roles->contains('role', 'approver');
+        });
+
+        Gate::define('pimpinan', function (User $user) {
+            // Mengecek apakah user memiliki role 'pimpinan' dalam relasi roles
+            return $user->roles->contains('role', 'pimpinan');
         });
     }
 }

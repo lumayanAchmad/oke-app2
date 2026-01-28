@@ -41,68 +41,52 @@ class SuratRekomendasiController extends Controller
 
     public function downloadRekomendasi($id)
     {
-        // Ambil data lengkap
         $rencana = RencanaPembelajaran::with([
-            'dataPegawai',
-            'dataPelatihan',
-            'dataPendidikan',
-            'suratRekomendasi',
-            'universitasCanApproving',
+            'dataPegawai', 'dataPegawai.unitKerja', 'dataPelatihan', 'dataPendidikan',
+            'suratRekomendasi', 'universitasCanApproving', 'bentukJalur.kategori', 'region',
         ])->findOrFail($id);
 
-        // Security check
-        if (
-            ! $rencana->universitasCanApproving ||
-            $rencana->universitasCanApproving->status !== 'disetujui'
-        ) {
+        if (! $rencana->universitasCanApproving || $rencana->universitasCanApproving->status !== 'disetujui') {
             return redirect()->back()->with('error', 'Dokumen belum tersedia.');
         }
 
-        // Buat / ambil surat rekomendasi
         $surat = $this->getOrCreateSurat($rencana);
 
-        $qrcode = QrCode::format('svg')
-            ->size(120)
-            ->margin(0)
-            ->generate($surat->kode_verifikasi);
+        // SETELAH (ganti dengan format data lengkap):
+        $qrContent  = "SURAT REKOMENDASI\n";
+        $qrContent .= "Nomor: " . $surat->nomor_surat . "\n\n";
+        $qrContent .= "PEGAWAI:\n";
+        $qrContent .= "Nama: " . $rencana->dataPegawai->nama . "\n";
+        $qrContent .= "KEGIATAN:\n";
+        $qrContent .= ($rencana->dataPelatihan->nama_pelatihan ?? $rencana->dataPendidikan->nama_pendidikan) . "\n\n";
+        $qrContent .= ($rencana->jam_pelajaran ?? '0') . " JP | ";
+        $qrContent .= "KODE VERIFIKASI: " . $surat->kode_verifikasi . "\n\n";
+        $qrContent .= "*Surat ini sah dan dapat diverifikasi*";
 
-        $qrcode = preg_replace('/<\?xml.*?\?>/i', '', $qrcode);
+        $qrcode = base64_encode(
+            QrCode::format('svg')
+                ->size(150)
+                ->margin(0)
+                ->generate($qrContent)
+        );
 
-        $html = view('pdf.rekomendasi', compact(
-            'rencana',
-            'surat',
-            'qrcode'
-        ))->render();
+        $html = view('pdf.rekomendasi', compact('rencana', 'surat', 'qrcode'))->render();
 
-        /**
-         * =========================
-         * INIT mPDF
-         * =========================
-         */
         $mpdf = new Mpdf([
             'mode'          => 'utf-8',
             'format'        => 'A4',
-            'orientation'   => 'P',
-            'margin_left'   => 20,
-            'margin_right'  => 20,
-            'margin_top'    => 20,
-            'margin_bottom' => 20,
+            'margin_top'    => 45,
+            'margin_header' => 5,
+            'tempDir'       => storage_path('app/public'),
         ]);
 
-        // Render PDF
         $mpdf->WriteHTML($html);
 
-        // Nama file aman
-        $namaFile = 'Surat_Rekomendasi_' .
-        str_replace('/', '-', $surat->nomor_surat) . '.pdf';
+        $namaFile = 'Rekomendasi_' . str_replace('/', '-', $surat->nomor_surat) . '.pdf';
 
-        return response(
-            $mpdf->Output($namaFile, 'S'),
-            200,
-            [
-                'Content-Type'        => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . $namaFile . '"',
-            ]
-        );
+        return response($mpdf->Output($namaFile, 'S'), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $namaFile . '"',
+        ]);
     }
 }

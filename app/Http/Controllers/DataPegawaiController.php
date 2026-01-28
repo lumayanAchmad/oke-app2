@@ -28,9 +28,12 @@ class DataPegawaiController extends Controller
 
     public function index()
     {
-        $query = DataPegawai::query();
-
-        $data['data_pegawai'] = $query->latest()->get();
+        $data['data_pegawai'] = DataPegawai::with([
+            'user',
+            'unitKerja',
+            'jabatan',
+            'pendidikanTerakhir.jenjangTerakhir',
+        ])->latest()->get();
 
         return view('pegawai_index', $data);
     }

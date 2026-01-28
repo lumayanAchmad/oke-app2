@@ -47,8 +47,14 @@ class kelompokCanValidatingController extends Controller
 
         $anggota = $kelompok->anggota;
 
+        // PERBAIKAN 1: Ambil semua rencana dari anggota, tidak filter status_pengajuan
         $rencana = RencanaPembelajaran::whereIn('data_pegawai_id', $anggota->pluck('id'))
-            ->where('status_pengajuan', 'diajukan')
+            ->where(function ($query) {
+                // Tampilkan semua yang statusnya masih dalam proses validasi kelompok
+                // atau yang sudah disetujui/direvisi oleh kelompok
+                $query->where('status_pengajuan', 'diajukan')
+                    ->orWhere('status_pengajuan', 'disetujui');
+            })
             ->with([
                 'dataPegawai',
                 'dataPelatihan',
@@ -62,9 +68,21 @@ class kelompokCanValidatingController extends Controller
             ])
             ->get();
 
-        $rencanaDisetujui       = $rencana->filter(fn($item) => optional($item->kelompokCanValidating)->status === 'disetujui');
-        $rencanaDirevisi        = $rencana->filter(fn($item) => optional($item->kelompokCanValidating)->status === 'direvisi');
-        $rencanaBelumDivalidasi = $rencana->filter(fn($item) => is_null(optional($item->kelompokCanValidating)->status));
+        // PERBAIKAN 2: Ubah logika filtering berdasarkan relasi kelompokCanValidating
+        $rencanaDisetujui = $rencana->filter(function ($item) {
+            // Tampilkan jika sudah disetujui oleh kelompok (status kelompokCanValidating = 'disetujui')
+            return optional($item->kelompokCanValidating)->status === 'disetujui';
+        });
+
+        $rencanaDirevisi = $rencana->filter(function ($item) {
+            return optional($item->kelompokCanValidating)->status === 'direvisi';
+        });
+
+        $rencanaBelumDivalidasi = $rencana->filter(function ($item) {
+            // Belum ada validasi dari kelompok
+            return is_null($item->kelompokCanValidating) ||
+            is_null($item->kelompokCanValidating->status);
+        });
 
         return view('validasi_kelompok_index', [
             'anggota'                => $anggota,

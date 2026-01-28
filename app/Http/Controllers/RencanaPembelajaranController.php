@@ -25,10 +25,6 @@ use Illuminate\Support\Facades\DB;
 
 class RencanaPembelajaranController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-
     protected $deadlineService;
 
     public function __construct(DeadlineService $deadlineService)

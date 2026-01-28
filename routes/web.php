@@ -8,7 +8,6 @@ use App\Http\Controllers\DataPendidikanController;
 use App\Http\Controllers\EditAksesController;
 use App\Http\Controllers\kelompokCanValidatingController;
 use App\Http\Controllers\KelompokController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\RencanaPembelajaranController;
 use App\Http\Controllers\SuratRekomendasiController;
@@ -43,7 +42,7 @@ Route::middleware([Authenticate::class, 'check.default.password'])->group(functi
     Route::post('/validasi-anggaran', [RencanaPembelajaranController::class, 'validasiAnggaran']);
     Route::get('/getPelatihanDetail/{id}', [RencanaPembelajaranController::class, 'getPelatihanDetail']);
     // Download surat rekomendasi
-    Route::get('/rencana-pembelajaran/{id}/download-rekomendasi', [SuratRekomendasiController::class, 'downloadRekomendasi'])
+    Route::get('/rencana_pembelajaran/{id}/download-rekomendasi', [SuratRekomendasiController::class, 'downloadRekomendasi'])
         ->name('rencana.download_rekomendasi');
 
     // EDIT AKSES
@@ -99,17 +98,12 @@ Route::middleware([Authenticate::class, 'check.default.password'])->group(functi
 
     // ATUR TENGGAT RENCANA (ADMIN)
     Route::resource('tenggat_rencana', TenggatRencanaController::class);
-
-    // UNTUK BACA SEMUA NOTIFIKASI
-    Route::prefix('notifications')->group(function () {
-        Route::get('/dropdown', [NotificationController::class, 'dropdown'])->name('notifications.dropdown');
-        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
-        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
-        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
-    });
 });
 
 Route::get('/ganti_password', [ProfilController::class, 'changePassword']);
+Route::post('/simpan-nomor-whatsapp', [ProfilController::class, 'simpanNomorWhatsApp'])
+    ->name('save-whatsapp-number')
+    ->middleware('auth');
 
 Route::post('/ganti_password', [ProfilController::class, 'processPassword']);
 

@@ -7,6 +7,7 @@ use App\Models\UniversitasCanApproving;
 use App\Services\DeadlineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class universitasCanApprovingController extends Controller
 {
@@ -100,13 +101,13 @@ class universitasCanApprovingController extends Controller
      */
     public function approve(RencanaPembelajaran $rencana)
     {
-        // Validasi deadline
+        // 1. Validasi deadline
         $deadlineInfo = $this->deadlineService->getDeadlineInfo('approval_universitas');
         if (! $deadlineInfo['is_within_deadline']) {
             return redirect()->back()->with('error', 'Tidak dalam periode approval universitas.');
         }
 
-        // Update status approval universitas
+        // 2. Update status approval universitas
         $rencana->universitasCanApproving()->updateOrCreate(
             ['rencana_pembelajaran_id' => $rencana->id],
             [
@@ -116,7 +117,61 @@ class universitasCanApprovingController extends Controller
             ]
         );
 
-        return redirect()->back()->with('success', 'Rencana pembelajaran berhasil disetujui.');
+        // 3. Update status utama rencana
+        $rencana->update([
+            'status_pengajuan' => 'disetujui',
+        ]);
+
+        // 4. Integrasi Notifikasi WhatsApp
+        $this->notifyViaWhatsApp($rencana);
+
+        return redirect()->back()->with('success', 'Rencana pembelajaran berhasil disetujui dan notifikasi WhatsApp telah dikirim.');
+    }
+
+/**
+ * Fungsi Helper untuk mengirim notifikasi WA
+ */
+    private function notifyViaWhatsApp($rencana)
+    {
+        $pegawai = $rencana->dataPegawai;
+        $nomorHP = $pegawai->nomor_telepon;
+
+        if (! $nomorHP) {
+            return;
+        }
+
+        // Normalisasi nomor ke format 62
+        if (substr($nomorHP, 0, 1) === '0') {
+            $nomorHP = '62' . substr($nomorHP, 1);
+        }
+
+        $namaKegiatan = $rencana->dataPelatihan->nama_pelatihan ?? $rencana->dataPendidikan->jurusan;
+        $tahun        = $rencana->tahun ?? date('Y');
+
+        // Template Pesan Profesional
+        $message = "Halo *" . $pegawai->nama . "*,\n\n" .
+            "Rencana pengembangan kompetensi Anda telah *DISETUJUI*.\n\n" .
+            "📌 *Detail*:\n" .
+            "• Kegiatan: " . $namaKegiatan . "\n" .
+            "• Tahun: " . $tahun . "\n\n" .
+            "Silakan unduh Surat Rekomendasi pada sistem. Terima kasih.";
+
+        // MENGGUNAKAN LARAVEL HTTP CLIENT (Lebih Aman & Modern)
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => env('FONNTE_TOKEN'),
+            ])->asForm()->post('https://api.fonnte.com/send', [
+                'target'      => $nomorHP,
+                'message'     => $message,
+                'countryCode' => '62',
+            ]);
+
+            return $response->json();
+        } catch (\Exception $e) {
+            // Log error jika pengiriman gagal agar aplikasi tidak crash
+            \Log::error('Gagal mengirim WA: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function reject(RencanaPembelajaran $rencana)

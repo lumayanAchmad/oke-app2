@@ -21,17 +21,6 @@ class BentukJalurController extends Controller
 
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreBentukJalurRequest $request)
     {
         // Validasi sudah dilakukan di StoreDataPelatihanRequest
@@ -44,9 +33,6 @@ class BentukJalurController extends Controller
             ->with('success', 'Bentuk jalur berhasil ditambah');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateBentukJalurRequest $request, BentukJalur $bentukJalur)
     {
         $validatedData = $request->validated();
@@ -55,9 +41,6 @@ class BentukJalurController extends Controller
             ->with('success', 'Bentuk jalur berhasil diubah!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(BentukJalur $bentukJalur)
     {
         $bentukJalur->delete();

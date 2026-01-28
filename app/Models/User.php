@@ -8,11 +8,10 @@ use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements CanResetPassword
 {
-    use HasFactory, Notifiable;
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -57,12 +56,4 @@ class User extends Authenticatable implements CanResetPassword
     {
         return $this->belongsToMany(Role::class, 'user_has_roles');
     }
-
-    use Notifiable;
-
-    public function routeNotificationForDatabase()
-    {
-        return $this->notifications();
-    }
-
 }

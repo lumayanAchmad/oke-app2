@@ -1,20 +1,16 @@
 @extends('layouts.main_layout', ['title' => 'Profil'])
 @section('content')
-  {{-- MODAL NOTIFIKASI TENGGAT WAKTU --}}
-  @if (session('deadline_notification') && !session('default_password'))
-    @include('components.modal.notifikasi_deadline_modal')
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        var deadlineModal = new bootstrap.Modal(document.getElementById('notifDeadlineModal'));
-        deadlineModal.show();
-      });
-    </script>
-  @endif
-
   {{-- ROW 1 --}}
   <div class="row d-flex align-items-stretch">
+    @php
+      $isPimpinan = in_array('pimpinan', $roles);
+    @endphp
+
     {{-- KOLOM 1 (PROFIL PENGGUNA) --}}
-    <div class="@if (auth()->user()->roles()->where('role', 'admin')->exists()) col-lg-6 d-flex @else col-lg-7 d-flex @endif">
+    <div
+      class="@if (auth()->user()->roles()->where('role', 'admin')->exists() && !$isPimpinan) col-lg-6 d-flex 
+             @elseif ($isPimpinan) col-12 d-flex
+             @else col-lg-7 d-flex @endif">
       <div class="card w-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -116,7 +112,6 @@
                                   <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
                                   <button type="submit" class="btn btn-warning" id="editAlert">Unggah</button>
                                 </div>
-
                               </div>
                             </div>
                           </div>
@@ -278,88 +273,91 @@
       </div>
     </div>
 
-    {{-- KOLOM MANAJEMEN JADWAL UNTUK ADMIN --}}
-    @can('admin')
-      <div class="col-lg-6 d-flex">
-        @include('partials.manajemen_jadwal_admin')
-      </div>
-    @else
-      {{-- KOLOM JADWAL UNTUK AKTOR LAIN --}}
-      @php
-        $rolePartials = [
-            'pegawai' => 'partials.jadwal_rencana_pegawai',
-            'ketua_kelompok' => 'partials.jadwal_validasi_kelompok',
-            'verifikator' => 'partials.jadwal_verifikasi_unit_kerja',
-            'approver' => 'partials.jadwal_approval_universitas',
-        ];
+    {{-- KOLOM MANAJEMEN JADWAL UNTUK ADMIN (TIDAK DITAMPILKAN UNTUK PIMPINAN) --}}
+    @if (!$isPimpinan)
+      @can('admin')
+        <div class="col-lg-6 d-flex">
+          @include('partials.manajemen_jadwal_admin')
+        </div>
+      @else
+        {{-- KOLOM JADWAL UNTUK AKTOR LAIN --}}
+        @php
+          $rolePartials = [
+              'pegawai' => 'partials.jadwal_rencana_pegawai',
+              'ketua_kelompok' => 'partials.jadwal_validasi_kelompok',
+              'verifikator' => 'partials.jadwal_verifikasi_unit_kerja',
+              'approver' => 'partials.jadwal_approval_universitas',
+          ];
 
-        // Filter roles yang ada di $rolePartials dan dimiliki oleh user
-        $filteredRoles = array_filter($roles, function ($role) use ($rolePartials) {
-            return isset($rolePartials[$role]);
-        });
+          // Filter roles yang ada di $rolePartials dan dimiliki oleh user
+          $filteredRoles = array_filter($roles, function ($role) use ($rolePartials) {
+              return isset($rolePartials[$role]);
+          });
 
-        $hasMultipleRoles = count($filteredRoles) > 1;
-      @endphp
+          $hasMultipleRoles = count($filteredRoles) > 1;
+        @endphp
 
-      <div class="col-lg-5 d-flex">
-        <div class="card w-100">
-          <div class="card-body">
-            @if ($hasMultipleRoles)
-              <ul class="nav nav-tabs mb-3" id="roleTabs" role="tablist">
+        <div class="col-lg-5 d-flex">
+          <div class="card w-100">
+            <div class="card-body">
+              @if ($hasMultipleRoles)
+                <ul class="nav nav-tabs mb-3" id="roleTabs" role="tablist">
+                  @foreach ($roles as $index => $role)
+                    @if (isset($rolePartials[$role]))
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link @if ($index === 0) active @endif"
+                          id="tab-{{ $role }}" data-bs-toggle="tab"
+                          data-bs-target="#content-{{ $role }}" type="button" role="tab">
+                          {{ ucwords(str_replace('_', ' ', $role)) }}
+                        </button>
+                      </li>
+                    @endif
+                  @endforeach
+                </ul>
+              @endif
+
+              {{-- Konten Tiap Tab --}}
+              <div class="tab-content" id="roleTabContent">
                 @foreach ($roles as $index => $role)
                   @if (isset($rolePartials[$role]))
-                    <li class="nav-item" role="presentation">
-                      <button class="nav-link @if ($index === 0) active @endif"
-                        id="tab-{{ $role }}" data-bs-toggle="tab" data-bs-target="#content-{{ $role }}"
-                        type="button" role="tab">
-                        {{ ucwords(str_replace('_', ' ', $role)) }}
-                      </button>
-                    </li>
+                    <div class="tab-pane h-100 fade @if ($index === 0) show active @endif"
+                      id="content-{{ $role }}" role="tabpanel" aria-labelledby="tab-{{ $role }}">
+                      @include($rolePartials[$role])
+                    </div>
                   @endif
                 @endforeach
-              </ul>
-            @endif
-
-            {{-- Konten Tiap Tab --}}
-            <div class="tab-content" id="roleTabContent">
-              @foreach ($roles as $index => $role)
-                @if (isset($rolePartials[$role]))
-                  <div class="tab-pane h-100 fade @if ($index === 0) show active @endif"
-                    id="content-{{ $role }}" role="tabpanel" aria-labelledby="tab-{{ $role }}">
-                    @include($rolePartials[$role])
-                  </div>
-                @endif
-              @endforeach
+              </div>
             </div>
           </div>
         </div>
-        {{-- Tab Navigasi --}}
-      </div>
-    @endcan
+      @endcan
+    @endif
   </div>
 
-  {{-- ROW 2: STATISTIK RENCANA PEMBELAJARAN --}}
-  @if ($dataPegawai && $dataPegawai->rencanaPembelajaran->count() > 0)
-    @include('partials.statistik.rencana_pembelajaran')
-  @endif
+  @can('pegawai')
+    {{-- ROW 2: STATISTIK RENCANA PEMBELAJARAN --}}
+    @if ($dataPegawai && $dataPegawai->rencanaPembelajaran->count() > 0)
+      @include('partials.statistik.rencana_pembelajaran')
+    @endif
 
-  {{-- ROW 3: STATISTIK PROGRES VERIFIKASI --}}
-  @if ($dataPegawai && $dataPegawai->rencanaPembelajaran->count() > 0)
-    @include('partials.statistik.progres_verifikasi')
-  @endif
+    {{-- ROW 3: STATISTIK PROGRES VERIFIKASI --}}
+    @if ($dataPegawai && $dataPegawai->rencanaPembelajaran->count() > 0)
+      @include('partials.statistik.progres_verifikasi')
+    @endif
+  @endcan
 
   {{-- ROW 4: STATISTIK KHUSUS KETUA KELOMPOK --}}
   @can('ketua_kelompok')
     @include('partials.statistik.kelompok')
   @endcan
 
-  {{-- ROW 5: STATISTIK KHUSUS KETUA KELOMPOK --}}
+  {{-- ROW 5: STATISTIK KHUSUS UNIT KERJA --}}
   @can('verifikator')
     @include('partials.statistik.unit_kerja')
   @endcan
 
   {{-- ROW 5: STATISTIK KHUSUS APPROVER --}}
-  @can('approver')
+  @canany(['approver', 'pimpinan'])
     @include('partials.statistik.universitas')
   @endcan
 

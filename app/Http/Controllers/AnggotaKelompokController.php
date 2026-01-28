@@ -13,39 +13,39 @@ class AnggotaKelompokController extends Controller
      */
     public function index()
     {
-        $pegawai = DataPegawai::where('user_id', Auth::id())->first();
+        $pegawai = DataPegawai::with([
+            'kelompok.ketua',
+            'kelompok.anggota.unitKerja',
+        ])->where('user_id', Auth::id())->first();
 
-        // Inisialisasi variabel dengan nilai default
-        $belumKelompok = (! $pegawai || $pegawai->kelompok_id == 0);
+        $belumKelompok = ! $pegawai || $pegawai->kelompok_id == 0;
         $hasKelompok   = ! $belumKelompok;
+
+        $kelompok      = null;
         $isKetua       = false;
         $ketuaKelompok = null;
-        $kelompok      = null; // Inisialisasi variabel kelompok
+        $dataPegawai   = collect();
 
-        if ($hasKelompok) {
-            $kelompok = Kelompok::with('ketua')->find($pegawai->kelompok_id);
-            $isKetua  = ($kelompok && $kelompok->id_ketua == $pegawai->id);
+        if ($hasKelompok && $pegawai->kelompok) {
+            $kelompok = $pegawai->kelompok;
+            $isKetua  = $kelompok->id_ketua === $pegawai->id;
 
-            if (! $isKetua && $kelompok) {
+            if (! $isKetua) {
                 $ketuaKelompok = $kelompok->ketua;
             }
+
+            $dataPegawai = $kelompok->anggota
+                ->where('id', '!=', $kelompok->id_ketua);
         }
 
-        $dataPegawai = $hasKelompok && $kelompok
-        ? DataPegawai::with('unitKerja')
-            ->where('kelompok_id', $pegawai->kelompok_id)
-            ->where('id', '!=', $kelompok->id_ketua)
-            ->get()
-        : collect();
-
-        return view('anggota_kelompok_index', [
-            'dataPegawai'   => $dataPegawai,
-            'belumKelompok' => $belumKelompok,
-            'isKetua'       => $isKetua,
-            'hasKelompok'   => $hasKelompok,
-            'ketuaKelompok' => $ketuaKelompok,
-            'kelompok'      => $kelompok, // Kirim variabel kelompok ke view
-        ]);
+        return view('anggota_kelompok_index', compact(
+            'dataPegawai',
+            'belumKelompok',
+            'isKetua',
+            'hasKelompok',
+            'ketuaKelompok',
+            'kelompok'
+        ));
     }
 
     public function updateWhatsAppLink(Request $request)
@@ -62,53 +62,5 @@ class AnggotaKelompokController extends Controller
 
         return back()
             ->with('success', 'Link grup berhasil diperbarui!');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

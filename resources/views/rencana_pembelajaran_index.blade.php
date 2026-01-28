@@ -386,7 +386,7 @@
                     @endif
                     <br>
 
-                    <span class="fw-semibold">Status:</span>
+                    <span class="fw-semibold">Status:</span><br>
                     {{ ucwords($rencana->status_pengajuan) }}
                     <br>
                   </td>
@@ -397,7 +397,7 @@
                         @if ($rencana->kelompokCanValidating->status == 'disetujui')
                           {{-- Cek Unit Kerja --}}
                           @if ($rencana->unitKerjaCanverifying)
-                            @if ($rencana->universitasCanApproving && $rencana->universitasCanApproving->status == 'disetujui')
+                            @if ($rencana->status_pengajuan === 'disetujui')
                               <strong>Download Surat Rekomendasi:</strong><br>
                               <a href="{{ route('rencana.download_rekomendasi', $rencana->id) }}"
                                 class="btn btn-primary btn-sm mt-1" target="_blank" {{-- Agar terbuka di tab baru --}}

@@ -60,8 +60,7 @@ class ProfilController extends Controller
             }
         }
 
-        // Data untuk approver universitas (tidak memerlukan dataPegawai)
-        if (in_array('approver', $roles)) {
+        if (in_array('approver', $roles) || in_array('pimpinan', $roles)) {
             $statistikApprovalUniversitas = $this->getStatistikApprovalUniversitas();
         }
 
@@ -87,6 +86,54 @@ class ProfilController extends Controller
             'statistikVerifikasiUnit',
             'statistikApprovalUniversitas'
         ));
+    }
+
+    public function simpanNomorWhatsApp(Request $request)
+    {
+        try {
+            // Validasi input
+            $request->validate([
+                'whatsapp_number' => 'required|digits_between:9,13|numeric',
+            ]);
+
+            // Ambil user yang sedang login
+            $user = Auth::user();
+
+            // Cek apakah user memiliki data pegawai
+            if (! $user->dataPegawai) {
+                return redirect()->back()->with('error', 'Data pegawai tidak ditemukan.');
+            }
+
+            // Format nomor: hapus awalan 0 jika ada, pastikan hanya angka
+            $whatsappNumber = preg_replace('/^0+/', '', $request->whatsapp_number);
+            $whatsappNumber = preg_replace('/[^0-9]/', '', $whatsappNumber);
+
+            // Validasi panjang nomor setelah diformat
+            if (strlen($whatsappNumber) < 9 || strlen($whatsappNumber) > 13) {
+                return redirect()->back()->with('error', 'Nomor WhatsApp harus antara 9-13 digit angka.');
+            }
+
+            // Cek apakah nomor sudah ada sebelumnya
+            $existingNumber = $user->dataPegawai->nomor_telepon;
+
+            // Update nomor WhatsApp di DataPegawai
+            $user->dataPegawai->update([
+                'nomor_telepon' => $whatsappNumber,
+                'updated_at'    => now(),
+            ]);
+
+            // Tentukan pesan sukses berdasarkan kondisi
+            if ($existingNumber) {
+                return redirect()->back()->with('success', 'Nomor WhatsApp berhasil diperbarui!');
+            } else {
+                return redirect()->back()->with('success', 'Nomor WhatsApp berhasil ditambahkan!');
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->validator)->with('error', 'Terjadi kesalahan validasi.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function getJadwalPerencanaan()
@@ -357,8 +404,21 @@ class ProfilController extends Controller
         }
 
         // Ambil semua rencana pembelajaran dari anggota kelompok
-        $anggotaKelompok = DataPegawai::where('kelompok_id', $kelompokId)->pluck('id');
-        $rencanaAnggota  = RencanaPembelajaran::whereIn('data_pegawai_id', $anggotaKelompok)->pluck('id');
+        $anggotaKelompok = DataPegawai::where('kelompok_id', $kelompokId)
+            ->where('id', '!=', $dataPegawai->id) // Exclude ketua sendiri
+            ->pluck('id');
+
+        // PERBAIKAN: Ambil rencana yang perlu divalidasi ketua
+        $rencanaAnggota = RencanaPembelajaran::whereIn('data_pegawai_id', $anggotaKelompok)
+            ->where(function ($query) {
+                $query->whereHas('kelompokCanValidating') // Yang sudah/sedang divalidasi
+                    ->orWhere(function ($q) {
+                        // Pendidikan yang belum divalidasi
+                        $q->where('klasifikasi', 'pendidikan')
+                            ->whereNotNull('data_pendidikan_id');
+                    });
+            })
+            ->pluck('id');
 
         $total = $rencanaAnggota->count();
         if ($total === 0) {
@@ -366,7 +426,7 @@ class ProfilController extends Controller
         }
 
         // Ambil data validasi oleh ketua kelompok ini
-        $validasiData = KelompokCanValidating::where('kelompok_id', $kelompokId)
+        $validasiData = KelompokCanValidating::whereIn('rencana_pembelajaran_id', $rencanaAnggota)
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->get();
@@ -374,6 +434,19 @@ class ProfilController extends Controller
         $disetujui = $validasiData->where('status', 'disetujui')->first()->count ?? 0;
         $direvisi  = $validasiData->where('status', 'direvisi')->first()->count ?? 0;
         $belum     = $total - $disetujui - $direvisi;
+
+        // PERBAIKAN TAMBAHAN: Hitung per jenis kegiatan
+        $rencanaPerJenis = RencanaPembelajaran::whereIn('id', $rencanaAnggota)
+            ->get()
+            ->groupBy(function ($item) {
+                return $item->klasifikasi === 'pelatihan' ? 'Pelatihan' : 'Pendidikan';
+            })
+            ->map(function ($item) {
+                return [
+                    'jumlah'        => $item->count(),
+                    'jam_pelajaran' => $item->sum('jam_pelajaran'),
+                ];
+            });
 
         return [
             'total'               => $total,
@@ -383,8 +456,10 @@ class ProfilController extends Controller
             'persen_disetujui'    => $total > 0 ? round(($disetujui / $total) * 100, 1) : 0,
             'persen_direvisi'     => $total > 0 ? round(($direvisi / $total) * 100, 1) : 0,
             'persen_belum'        => $total > 0 ? round(($belum / $total) * 100, 1) : 0,
-            'jumlah_anggota'      => DataPegawai::where('kelompok_id', $kelompokId)->count() - 1, // minus ketua sendiri
-            'rencana_per_anggota' => $total > 0 ? round($total / (DataPegawai::where('kelompok_id', $kelompokId)->count() - 1), 1) : 0,
+            'jumlah_anggota'      => $anggotaKelompok->count(),
+            'rencana_per_anggota' => $total > 0 ? round($total / $anggotaKelompok->count(), 1) : 0,
+            // TAMBAHAN: Data per jenis
+            'rencana_per_jenis'   => $rencanaPerJenis,
         ];
     }
 
@@ -401,10 +476,17 @@ class ProfilController extends Controller
         // Ambil semua pegawai di unit kerja ini
         $pegawaiUnitKerja = DataPegawai::where('unit_kerja_id', $unitKerjaId)->pluck('id');
 
-        // Ambil semua rencana pembelajaran dari pegawai di unit kerja ini
+        // PERBAIKAN: Ambil semua rencana pembelajaran (baik pendidikan maupun pelatihan)
         $rencanaUnitKerja = RencanaPembelajaran::whereIn('data_pegawai_id', $pegawaiUnitKerja)
-            ->whereHas('kelompokCanValidating', function ($q) {
-                $q->where('status', 'disetujui'); // Hanya rencana yang sudah divalidasi kelompok
+            ->where(function ($query) {
+                $query->whereHas('kelompokCanValidating', function ($q) {
+                    $q->where('status', 'disetujui');
+                })
+                    ->orWhere(function ($q) {
+                        // Untuk pelatihan yang mungkin tidak melalui validasi kelompok
+                        $q->where('klasifikasi', 'pelatihan')
+                            ->whereNotNull('data_pelatihan_id');
+                    });
             })
             ->get();
 
@@ -425,12 +507,21 @@ class ProfilController extends Controller
 
         // Data untuk analisis lebih lanjut
         $rencanaPerKelompok = RencanaPembelajaran::whereIn('data_pegawai_id', $pegawaiUnitKerja)
-            ->whereHas('kelompokCanValidating', function ($q) {
-                $q->where('status', 'disetujui');
+            ->where(function ($query) {
+                $query->whereHas('kelompokCanValidating', function ($q) {
+                    $q->where('status', 'disetujui');
+                })
+                    ->orWhere(function ($q) {
+                        // Untuk pelatihan
+                        $q->where('klasifikasi', 'pelatihan')
+                            ->whereNotNull('data_pelatihan_id');
+                    });
             })
             ->with(['dataPegawai.kelompok', 'unitKerjaCanVerifying'])
             ->get()
-            ->groupBy('dataPegawai.kelompok.ketua.nama')
+            ->groupBy(function ($item) {
+                return $item->dataPegawai->kelompok->ketua->nama ?? 'Tidak dikelompokkan';
+            })
             ->map(function ($item, $key) {
                 return [
                     'jumlah'    => $item->count(),
@@ -440,15 +531,22 @@ class ProfilController extends Controller
                 ];
             });
 
-        // Data per jenis pendidikan/pelatihan
+        // PERBAIKAN PENTING: Data per jenis pendidikan/pelatihan
         $rencanaPerJenis = RencanaPembelajaran::whereIn('data_pegawai_id', $pegawaiUnitKerja)
-            ->whereHas('kelompokCanValidating', function ($q) {
-                $q->where('status', 'disetujui');
+            ->where(function ($query) {
+                $query->whereHas('kelompokCanValidating', function ($q) {
+                    $q->where('status', 'disetujui');
+                })
+                    ->orWhere(function ($q) {
+                        // Untuk pelatihan
+                        $q->where('klasifikasi', 'pelatihan')
+                            ->whereNotNull('data_pelatihan_id');
+                    });
             })
-            ->with(['dataPendidikan', 'dataPelatihan', 'unitKerjaCanVerifying'])
             ->get()
             ->groupBy(function ($item) {
-                return $item->dataPendidikan ? 'Pendidikan' : 'Pelatihan';
+                // Gunakan field klasifikasi dari database
+                return $item->klasifikasi === 'pelatihan' ? 'Pelatihan' : 'Pendidikan';
             })
             ->map(function ($item, $key) {
                 return [
@@ -492,20 +590,28 @@ class ProfilController extends Controller
     // Method untuk mendapatkan statistik komprehensif approver universitas
     private function getStatistikApprovalUniversitas()
     {
-        // Ambil semua data rencana pembelajaran yang sudah diverifikasi unit kerja
-        $rencanaTerverifikasi = RencanaPembelajaran::whereHas('unitKerjaCanVerifying', function ($q) {
-            $q->where('status', 'disetujui');
-        })->with([
-            'dataPegawai.unitKerja',
-            'dataPegawai.kelompok',
-            'dataPendidikan',
-            'dataPelatihan',
-            'bentukJalur',
-            'jenisPendidikan',
-            'region',
-            'jenjang',
-            'universitasCanApproving',
-        ])->get();
+        // PERBAIKAN: Ambil semua rencana yang valid (baik pendidikan maupun pelatihan)
+        $rencanaTerverifikasi = RencanaPembelajaran::where(function ($query) {
+            $query->whereHas('unitKerjaCanVerifying', function ($q) {
+                $q->where('status', 'disetujui');
+            })
+                ->orWhere(function ($q) {
+                    // Untuk pelatihan yang mungkin langsung ke universitas
+                    $q->where('klasifikasi', 'pelatihan')
+                        ->whereNotNull('data_pelatihan_id');
+                });
+        })
+            ->with([
+                'dataPegawai.unitKerja',
+                'dataPegawai.kelompok',
+                'dataPendidikan',
+                'dataPelatihan',
+                'bentukJalur',
+                'jenisPendidikan',
+                'region',
+                'jenjang',
+                'universitasCanApproving',
+            ])->get();
 
         $total = $rencanaTerverifikasi->count();
         if ($total === 0) {
@@ -541,9 +647,9 @@ class ProfilController extends Controller
                 ];
             })->sortByDesc('total_anggaran');
 
-        // Analisis per Jenis Kegiatan
+        // PERBAIKAN: Analisis per Jenis Kegiatan berdasarkan klasifikasi
         $analisisJenis = $rencanaTerverifikasi->groupBy(function ($item) {
-            return $item->dataPendidikan ? 'Pendidikan Formal' : 'Pelatihan';
+            return $item->klasifikasi === 'pelatihan' ? 'Pelatihan' : 'Pendidikan Formal';
         })->map(function ($item) {
             return [
                 'count'          => $item->count(),
@@ -564,7 +670,7 @@ class ProfilController extends Controller
                 ];
             });
 
-        // Analisis per Klasifikasi
+        // Analisis per Klasifikasi (sekarang lebih akurat)
         $analisisKlasifikasi = $rencanaTerverifikasi->groupBy('klasifikasi')
             ->map(function ($item) {
                 return [
